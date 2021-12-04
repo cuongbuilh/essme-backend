@@ -12,6 +12,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 @Data
@@ -24,7 +25,7 @@ public class Question {
 
 	@JsonProperty("Description")
 	@Field("Description")
-	@NotNull
+	@NotBlank(message = "{vi=\"nội dung trống\", en=\"content is empty\"}")
 	private String description;
 
 	@JsonProperty("Customer_id")
@@ -37,6 +38,7 @@ public class Question {
 
 	@JsonProperty("Title")
 	@Field("Title")
+	@NotBlank(message = "{vi=\"nội dung trống\", en=\"content is empty\"}")
 	private String title;
 
 	@Id
