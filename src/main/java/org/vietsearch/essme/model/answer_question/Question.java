@@ -12,6 +12,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import javax.validation.constraints.NotNull;
+
 @Data
 @Document("answer_question")
 public class Question {
@@ -22,10 +24,12 @@ public class Question {
 
 	@JsonProperty("Description")
 	@Field("Description")
+	@NotNull
 	private String description;
 
 	@JsonProperty("Customer_id")
 	@Field("Customer_id")
+	@NotNull
 	private String customerId;
 
 	@JsonProperty("answers")

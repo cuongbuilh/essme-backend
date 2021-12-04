@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import javax.validation.constraints.NotNull;
 import java.util.Date;
 
 @Data
@@ -30,10 +31,12 @@ public class Answer {
 
 	@JsonProperty("answer")
 	@Field("answer")
+	@NotNull
 	private String answer;
 
 	@JsonProperty("expert_id")
 	@Field("expert_id")
+	@NotNull
 	private String expertId;
 
 	@JsonProperty("vote")
