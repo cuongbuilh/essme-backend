@@ -18,6 +18,9 @@ import javax.validation.constraints.NotNull;
 @Data
 @Document("answer_question")
 public class Question {
+	public Question(){
+		this.vote=0;
+	}
 
 	@CreatedDate
 	@JsonProperty(value = "created_at", access = JsonProperty.Access.READ_ONLY)
