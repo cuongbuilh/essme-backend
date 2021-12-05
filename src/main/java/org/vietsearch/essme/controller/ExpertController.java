@@ -66,7 +66,6 @@ public class ExpertController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Expert createUser(@RequestHeader(value = "accept-language", required = false, defaultValue = "en") String lang, @Valid @RequestBody Expert expert) {
-        expertRepository.save(expert);
         return expertRepository.save(expert);
     }
 
