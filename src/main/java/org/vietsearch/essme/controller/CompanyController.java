@@ -56,9 +56,12 @@ public class CompanyController {
 
     @GetMapping("/search")
     public List<Company> searchCompanies(@RequestParam("text") String text) {
-        return companyRepository.findBy(
+        List<Company> list = companyRepository.findBy(
                 TextCriteria.forDefaultLanguage().caseSensitive(false).matchingPhrase(text)
         );
+
+        if (list.isEmpty()) list = companyRepository.findByNameOrIndustriesStartsWithIgnoreCase(text);
+        return list;
     }
 
     @GetMapping("/{_id}")
@@ -74,7 +77,10 @@ public class CompanyController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Company addCompany(@RequestBody Company company){
+    public Company addCompany(@RequestBody Company company) {
+        if (isNameAlreadyUsed(company.getName())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Name is already used");
+        }
         return companyRepository.insert(company);
     }
 
@@ -82,8 +88,14 @@ public class CompanyController {
     @ResponseStatus(HttpStatus.OK)
     public Company updateById(@PathVariable("_id") String _id, @RequestBody Company company) {
         companyRepository.findById(_id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Company not found"));
+        if (isNameAlreadyUsed(company.getName())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Name is already used");
+        }
         company.set_id(_id);
         return companyRepository.save(company);
     }
 
+    private boolean isNameAlreadyUsed(String name) {
+        return companyRepository.findByNameIgnoreCase(name).isPresent();
+    }
 }

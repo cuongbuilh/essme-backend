@@ -17,7 +17,6 @@ import org.vietsearch.essme.repository.academic_disciplines.DisciplineRepository
 
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/discipline")
@@ -47,15 +46,17 @@ public class DisciplineController {
 
     @GetMapping("/{_id}")
     public Discipline getDisciplineById(@PathVariable("_id") String _id) {
-        Optional<Discipline> optionalDiscipline = disciplineRepository.findById(_id);
-        optionalDiscipline.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Discipline not found"));
-        return optionalDiscipline.get();
+        return disciplineRepository.findById(_id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Discipline not found"));
     }
 
     @GetMapping("/search")
     public List<Discipline> searchDisciplines(@RequestParam("text") String text) {
         TextCriteria criteria = TextCriteria.forDefaultLanguage().caseSensitive(false).matchingPhrase(text);
-        return disciplineRepository.findBy(criteria);
+        List<Discipline> list = disciplineRepository.findBy(criteria);
+        if(list.isEmpty()){
+            list = disciplineRepository.findByNamesOrSynonymsStartsWithIgnoreCase(text);
+        }
+        return list;
     }
 
     @GetMapping("/parent")
@@ -78,6 +79,9 @@ public class DisciplineController {
     public Discipline updateById(@PathVariable("_id") String _id, @RequestBody Discipline discipline) {
         disciplineRepository.findById(_id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Discipline not found"));
+        if(isNameAlreadyUsed(discipline.getName())){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Name " + discipline.getName()+ " is already used");
+        }
         discipline.set_id(_id);
         return disciplineRepository.save(discipline);
     }
@@ -85,6 +89,13 @@ public class DisciplineController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Discipline addDiscipline(@RequestBody Discipline discipline) {
+        if(isNameAlreadyUsed(discipline.getName())){
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Name " + discipline.getName()+ " is already used");
+        }
         return disciplineRepository.insert(discipline);
+    }
+
+    private boolean isNameAlreadyUsed(String name){
+        return disciplineRepository.findByNameIgnoreCase(name).isPresent();
     }
 }
