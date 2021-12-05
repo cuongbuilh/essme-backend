@@ -12,6 +12,7 @@ import org.vietsearch.essme.repository.RequestResponseRepository;
 import org.vietsearch.essme.model.request_response.*;
 
 import javax.validation.Valid;
+import javax.validation.constraints.NotBlank;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -41,6 +42,11 @@ public class RequestResponseController {
     public List<Request> searchRequests(@RequestParam("text") String text) {
         TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingPhrase(text);
         return requestRepository.findBy(criteria);
+    }
+
+    @GetMapping("/byUserId/{userId}")
+    public List<Request> getRequestsByUserId(@PathVariable("userId") String userId){
+         return requestRepository.findAllByCustomerId(userId);
     }
 
     @GetMapping("/topic/{topic}")

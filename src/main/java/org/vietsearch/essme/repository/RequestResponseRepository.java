@@ -12,4 +12,6 @@ public interface RequestResponseRepository extends MongoRepository<Request, Stri
     List<Request> findBy(TextCriteria criteria);
 
     Page<Request> findByTopic(String topic, PageRequest of);
+
+    List<Request> findAllByCustomerId(String customerID);
 }
