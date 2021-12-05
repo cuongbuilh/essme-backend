@@ -33,6 +33,11 @@ public class Question {
 	@NotNull
 	private String customerId;
 
+	@JsonProperty("Admin_id")
+	@Field("Admin_id")
+	@NotNull
+	private String adminId;
+
 	@JsonProperty("answers")
 	private List<Answer> answers;
 
