@@ -12,7 +12,6 @@ import org.vietsearch.essme.repository.CorporateRepository;
 import javax.validation.Valid;
 import java.util.List;
 
-@CrossOrigin
 @RestController
 @RequestMapping("/api/corporates")
 public class CorporateTitleController {

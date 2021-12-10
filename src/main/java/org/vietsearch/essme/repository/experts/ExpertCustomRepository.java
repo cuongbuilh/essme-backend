@@ -1,4 +1,4 @@
-package org.vietsearch.essme.repository;
+package org.vietsearch.essme.repository.experts;
 
 import java.util.Map;
 

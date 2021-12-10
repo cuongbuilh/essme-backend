@@ -32,7 +32,7 @@ public class DisciplineController {
                                            @RequestParam(name = "lang", defaultValue = "en") String lang,
                                            @RequestParam(name = "sort", defaultValue = "name") String sortAttr,
                                            @RequestParam(name = "asc", defaultValue = "true") boolean asc) {
-        Sort sort = null;
+        Sort sort = Sort.by("names");
         if (sortAttr.equals("name")) {
             sort = Sort.by("names." + lang);
         } else if (sortAttr.equals("level")) {

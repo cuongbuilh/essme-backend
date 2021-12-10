@@ -1,6 +1,7 @@
 package org.vietsearch.essme.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.http.HttpStatus;
@@ -12,7 +13,6 @@ import org.vietsearch.essme.repository.UniversityRepository;
 import javax.validation.Valid;
 import java.util.List;
 
-@CrossOrigin
 @RestController
 @RequestMapping("/api/universities")
 public class UniversityController {
@@ -29,11 +29,8 @@ public class UniversityController {
     }
 
     @GetMapping
-    public List<University> getUniversities(@RequestParam(value = "limit", defaultValue = "-1") int limit) {
-        if (limit == -1) {
-            return universityRepository.findAll();
-        }
-        return universityRepository.findAll(PageRequest.of(0, limit)).getContent();
+    public Page<University> getUniversities(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "20") int size, @RequestParam(value = "sort", required = false) String sort) {
+        return universityRepository.findAll(PageRequest.of(page, size));
     }
 
     @GetMapping("/{id}")

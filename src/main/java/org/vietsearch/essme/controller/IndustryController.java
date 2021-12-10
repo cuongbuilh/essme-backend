@@ -12,7 +12,6 @@ import org.vietsearch.essme.repository.IndustryRepository;
 import javax.validation.Valid;
 import java.util.List;
 
-@CrossOrigin
 @RestController
 @RequestMapping("/api/industries")
 public class IndustryController {
