@@ -1,16 +1,13 @@
 package org.vietsearch.essme.controller;
 
+import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-
 import org.springframework.data.domain.Sort;
-
 import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
 import org.vietsearch.essme.model.academic_disciplines.Discipline;
 import org.vietsearch.essme.repository.academic_disciplines.DisciplineCustomRepoImpl;
 import org.vietsearch.essme.repository.academic_disciplines.DisciplineRepository;
@@ -29,19 +26,14 @@ public class DisciplineController {
     @GetMapping
     public List<Discipline> getDisciplines(@RequestParam(name = "page", defaultValue = "0") int page,
                                            @RequestParam(name = "size", defaultValue = "20") int size,
+                                           @RequestParam(name = "sortBy", defaultValue = "name") @Parameter(example = "name | level") String sortBy,
                                            @RequestParam(name = "lang", defaultValue = "en") String lang,
-                                           @RequestParam(name = "sort", defaultValue = "name") String sortAttr,
                                            @RequestParam(name = "asc", defaultValue = "true") boolean asc) {
-        Sort sort = Sort.by("names");
-        if (sortAttr.equals("name")) {
-            sort = Sort.by("names." + lang);
-        } else if (sortAttr.equals("level")) {
+        Sort sort = Sort.by("names." + lang);
+        if ("level".equals(sortBy))
             sort = Sort.by("level");
-        }
-        sort = asc ? sort.ascending() : sort.descending();
-
-        Page<Discipline> disciplinePage = disciplineRepository.findAll(PageRequest.of(page, size, sort));
-        return disciplinePage.getContent();
+        if (!asc) sort.descending();
+        return disciplineRepository.findAll(PageRequest.of(page, size, sort)).getContent();
     }
 
     @GetMapping("/{_id}")
@@ -53,7 +45,7 @@ public class DisciplineController {
     public List<Discipline> searchDisciplines(@RequestParam("text") String text) {
         TextCriteria criteria = TextCriteria.forDefaultLanguage().caseSensitive(false).matchingPhrase(text);
         List<Discipline> list = disciplineRepository.findBy(criteria);
-        if(list.isEmpty()){
+        if (list.isEmpty()) {
             list = disciplineRepository.findByNamesOrSynonymsStartsWithIgnoreCase(text);
         }
         return list;
@@ -77,11 +69,8 @@ public class DisciplineController {
     @PutMapping("/{_id}")
     @ResponseStatus(value = HttpStatus.OK)
     public Discipline updateById(@PathVariable("_id") String _id, @RequestBody Discipline discipline) {
-        disciplineRepository.findById(_id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Discipline not found"));
-        if(isNameAlreadyUsed(discipline.getName())){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Name " + discipline.getName()+ " is already used");
-        }
+        disciplineRepository.findById(_id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Discipline not found"));
+        checkExistsByName(discipline.getName());
         discipline.set_id(_id);
         return disciplineRepository.save(discipline);
     }
@@ -89,13 +78,12 @@ public class DisciplineController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Discipline addDiscipline(@RequestBody Discipline discipline) {
-        if(isNameAlreadyUsed(discipline.getName())){
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Name " + discipline.getName()+ " is already used");
-        }
+        checkExistsByName(discipline.getName());
         return disciplineRepository.insert(discipline);
     }
 
-    private boolean isNameAlreadyUsed(String name){
-        return disciplineRepository.findByNameIgnoreCase(name).isPresent();
+    private void checkExistsByName(String name) {
+        if (disciplineRepository.findByNameIgnoreCase(name).isPresent())
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Name " + name + " is already used");
     }
 }
