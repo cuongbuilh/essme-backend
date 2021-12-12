@@ -26,7 +26,7 @@ public class DisciplineController {
     @GetMapping
     public List<Discipline> getDisciplines(@RequestParam(name = "page", defaultValue = "0") int page,
                                            @RequestParam(name = "size", defaultValue = "20") int size,
-                                           @RequestParam(name = "sortBy", defaultValue = "name") @Parameter(example = "name | level") String sortBy,
+                                           @RequestParam(name = "sortBy", defaultValue = "name") @Parameter(description = "name | level") String sortBy,
                                            @RequestParam(name = "lang", defaultValue = "en") String lang,
                                            @RequestParam(name = "asc", defaultValue = "true") boolean asc) {
         Sort sort = Sort.by("names." + lang);

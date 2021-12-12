@@ -33,9 +33,9 @@ public class UniversityController {
     @GetMapping
     public List<University> getUniversities(@RequestParam(name = "page", defaultValue = "0") int page,
                                             @RequestParam(name = "size", defaultValue = "20") int size,
-                                            @RequestParam(name = "sortBy", defaultValue = "name") @Parameter(example = "name | rank") String sortBy,
+                                            @RequestParam(name = "sortBy", defaultValue = "name") @Parameter(description = "name | rank") String sortBy,
                                             @RequestParam(name = "lang", defaultValue = "en") String lang,
-                                            @RequestParam(name = "rankBy", defaultValue = "qs") @Parameter(example = "qs | arwu | the") String rankBy,
+                                            @RequestParam(name = "rankBy", defaultValue = "qs") @Parameter(description = "qs | arwu | the") String rankBy,
                                             @RequestParam(name = "asc", defaultValue = "true") boolean asc) {
         Sort sort = Sort.by("names." + lang);
         if (Objects.equals("rank", sortBy))

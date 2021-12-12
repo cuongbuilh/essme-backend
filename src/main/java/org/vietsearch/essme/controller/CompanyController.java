@@ -36,9 +36,9 @@ public class CompanyController {
     @GetMapping
     public List<Company> getCompanies(@RequestParam(name = "page", defaultValue = "0") int page,
                                       @RequestParam(name = "size", defaultValue = "20") int size,
-                                      @RequestParam(name = "sortBy", defaultValue = "name") @Parameter(example = "name | rank") String sortBy,
+                                      @RequestParam(name = "sortBy", defaultValue = "name") @Parameter(description = "name | rank") String sortBy,
                                       @RequestParam(name = "lang", defaultValue = "en") String lang, //en, vi, fr, de
-                                      @RequestParam(name = "rankBy", defaultValue = "ValueToday") @Parameter(example = "ValueToday | Fortune | Forbes") String rankBy,
+                                      @RequestParam(name = "rankBy", defaultValue = "ValueToday") @Parameter(description = "ValueToday | Fortune | Forbes") String rankBy,
                                       @RequestParam(name = "asc", defaultValue = "true") boolean asc) {
         Sort sort = Sort.by("names." + lang);
         if (Objects.equals("rank", sortBy))
