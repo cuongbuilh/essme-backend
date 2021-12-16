@@ -23,7 +23,7 @@ public class Question {
 	private Date createdAt;
 
 	@JsonProperty("Description")
-	@Field("Descriptions")
+	@Field("Description")
 	@NotNull
 	private String description;
 
