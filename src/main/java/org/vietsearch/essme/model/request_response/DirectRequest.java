@@ -40,6 +40,9 @@ public class DirectRequest {
     @NotBlank(message = "{vi=\"nội dung trống\", en=\"content is empty\"}")
     private String content;
 
+    @JsonProperty("responses")
+    private List<String> responses;
+
     @JsonProperty("expert_id")
     @Field("expert_id")
     private String expertId;
