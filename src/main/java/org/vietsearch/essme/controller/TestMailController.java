@@ -9,6 +9,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.vietsearch.essme.service.IEmailService;
 
+import javax.validation.constraints.Email;
+
 @RestController
 @RequestMapping("/api/mail")
 public class TestMailController {
@@ -16,8 +18,8 @@ public class TestMailController {
     private IEmailService iEmailService;
 
     @GetMapping
-    public ResponseEntity sendMail(@RequestParam("email") String email){
+    public ResponseEntity sendMail(@RequestParam("email") @Email String email){
         iEmailService.sendAcceptRequestEmail("test@gmail.com", email);
-        return new ResponseEntity("email has send", HttpStatus.OK);
+        return new ResponseEntity("email has send to " + email, HttpStatus.OK);
     }
 }
