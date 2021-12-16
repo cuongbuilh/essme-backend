@@ -11,6 +11,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 import java.util.Date;
 
@@ -20,6 +21,7 @@ public class Answer {
 		this._id=new ObjectId().toString();
 		this.createdAt=new Date();
 		this.updatedAt=new Date();
+		this.vote=0;
 	}
 	@Id
 	@JsonProperty(value = "_id", access = JsonProperty.Access.READ_ONLY)
@@ -31,7 +33,7 @@ public class Answer {
 
 	@JsonProperty("answer")
 	@Field("answer")
-	@NotNull
+	@NotBlank(message = "{vi=\"nội dung trống\", en=\"content is empty\"}")
 	private String answer;
 
 	@JsonProperty("expert_id")
@@ -46,4 +48,8 @@ public class Answer {
 	@LastModifiedDate
 	@JsonProperty(value = "updated_at", access = JsonProperty.Access.READ_ONLY)
 	private Date updatedAt;
+
+	@JsonProperty("uid")
+	@Field("uid")
+	private String uid;
 }

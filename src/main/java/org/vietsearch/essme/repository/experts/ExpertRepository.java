@@ -1,4 +1,4 @@
-package org.vietsearch.essme.repository;
+package org.vietsearch.essme.repository.experts;
 
 import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.data.mongodb.repository.MongoRepository;

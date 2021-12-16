@@ -12,11 +12,15 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import org.springframework.format.annotation.DateTimeFormat;
 
+import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotNull;
 
 @Data
 @Document("answer_question")
 public class Question {
+	public Question(){
+		this.vote=0;
+	}
 
 	@CreatedDate
 	@JsonProperty(value = "created_at", access = JsonProperty.Access.READ_ONLY)
@@ -24,7 +28,7 @@ public class Question {
 
 	@JsonProperty("Description")
 	@Field("Description")
-	@NotNull
+	@NotBlank(message = "{vi=\"nội dung trống\", en=\"content is empty\"}")
 	private String description;
 
 	@JsonProperty("Customer_id")
@@ -32,11 +36,17 @@ public class Question {
 	@NotNull
 	private String customerId;
 
+	@JsonProperty("Admin_id")
+	@Field("Admin_id")
+	@NotNull
+	private String adminId;
+
 	@JsonProperty("answers")
 	private List<Answer> answers;
 
 	@JsonProperty("Title")
 	@Field("Title")
+	@NotBlank(message = "{vi=\"nội dung trống\", en=\"content is empty\"}")
 	private String title;
 
 	@Id
@@ -54,4 +64,8 @@ public class Question {
 	@LastModifiedDate
 	@JsonProperty(value = "updated_at", access = JsonProperty.Access.READ_ONLY)
 	private Date updatedAt;
+
+	@JsonProperty("uid")
+	@Field("uid")
+	private String uid;
 }
