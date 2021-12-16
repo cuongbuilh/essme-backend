@@ -9,14 +9,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.vietsearch.essme.model.expert.Expert;
-import org.vietsearch.essme.repository.ExpertCustomRepositoryImpl;
-import org.vietsearch.essme.repository.ExpertRepository;
+import org.vietsearch.essme.repository.experts.ExpertCustomRepositoryImpl;
+import org.vietsearch.essme.repository.experts.ExpertRepository;
 
 import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
 
-@CrossOrigin
 @RestController
 @RequestMapping("/api/experts")
 public class ExpertController {
@@ -33,7 +32,10 @@ public class ExpertController {
     }
 
     @GetMapping
-    public List<Expert> getExperts(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "20") int size, @RequestParam(value = "sort", defaultValue = "name") String sortAttr, @RequestParam(value = "desc", defaultValue = "false") boolean desc) {
+    public List<Expert> getExperts(@RequestParam(value = "page", defaultValue = "0") int page,
+                                   @RequestParam(value = "size", defaultValue = "20") int size,
+                                   @RequestParam(value = "sort", defaultValue = "name") String sortAttr,
+                                   @RequestParam(value = "desc", defaultValue = "false") boolean desc) {
         Sort sort = Sort.by(sortAttr);
         if (desc)
             sort = sort.descending();
@@ -48,7 +50,7 @@ public class ExpertController {
     }
 
     @GetMapping("/field")
-    public Map<String, Integer> getNumberOfExpertsInEachField(){
+    public Map<String, Integer> getNumberOfExpertsInEachField() {
         return this.expertCustomRepository.getNumberOfExpertsInEachField();
     }
 

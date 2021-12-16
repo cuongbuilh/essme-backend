@@ -21,6 +21,7 @@ public class Answer {
 		this._id=new ObjectId().toString();
 		this.createdAt=new Date();
 		this.updatedAt=new Date();
+		this.vote=0;
 	}
 	@Id
 	@JsonProperty(value = "_id", access = JsonProperty.Access.READ_ONLY)
@@ -47,4 +48,8 @@ public class Answer {
 	@LastModifiedDate
 	@JsonProperty(value = "updated_at", access = JsonProperty.Access.READ_ONLY)
 	private Date updatedAt;
+
+	@JsonProperty("uid")
+	@Field("uid")
+	private String uid;
 }

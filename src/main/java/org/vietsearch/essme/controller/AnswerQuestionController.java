@@ -150,4 +150,14 @@ public class AnswerQuestionController {
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Answer not found", null);
     }
+
+    @GetMapping("/byCustomerId/{CustomerId}")
+    public List<Question> getQuestionbyCustomerId(@PathVariable("CustomerId") String customerId){
+        return questionRepository.findByCustomerId(customerId);
+    }
+
+    @GetMapping("/byExpertId/{ExpertId}")
+    public List<Question> getQuestionbyexpertId(@PathVariable("ExpertId") String expertId){
+        return questionRepository.findByAnswersExpertId(expertId);
+    }
 }
