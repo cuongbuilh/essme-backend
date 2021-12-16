@@ -12,12 +12,11 @@ public class EmailService implements IEmailService {
     private JavaMailSender mailSender;
 
     @Override
-    public void sendAcceptRequestEmail(String from, String to) {
-        String content = "Your request has a new response from " + from;
+    public void sendAcceptRequestEmail(String expertEmail, String recipientEmail) {
+        String content = "Your request has a new response from " + expertEmail;
         String subject = "REQUEST HAS A NEW RESPONSE";
-        sendEmailTo(to, subject , content);
+        sendEmailTo(recipientEmail, subject , content);
     }
-
 
     private void sendEmailTo(String recipientEmail, String subject, String content) {
         SimpleMailMessage message = new SimpleMailMessage();
