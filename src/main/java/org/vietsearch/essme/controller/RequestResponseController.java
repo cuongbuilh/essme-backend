@@ -1,5 +1,6 @@
 package org.vietsearch.essme.controller;
 
+import com.google.firebase.auth.FirebaseAuthException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -8,6 +9,7 @@ import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.vietsearch.essme.filter.AuthenticatedRequest;
 import org.vietsearch.essme.repository.RequestResponseRepository;
 import org.vietsearch.essme.model.request_response.*;
 
@@ -22,6 +24,12 @@ public class RequestResponseController {
     @Autowired
     private RequestResponseRepository requestRepository;
 
+    @DeleteMapping("/test")
+    @ResponseStatus(HttpStatus.OK)
+    public String testPrincipal(AuthenticatedRequest request) throws FirebaseAuthException {
+        return request.getUserId();
+    }
+
     @GetMapping
     public Page<Request> getRequests(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "20") int size, @RequestParam(value = "sort", defaultValue = "createdAt") String sortAttr, @RequestParam(value = "desc", defaultValue = "false") boolean desc) {
         Sort sort = Sort.by(sortAttr);
@@ -31,6 +39,7 @@ public class RequestResponseController {
         Page<Request> requestPage = requestRepository.findAll(PageRequest.of(page, size, sort));
         return requestPage;
     }
+
 
     @GetMapping("/{id}")
     public Request getRequestById(@PathVariable("id") String id) {
@@ -49,13 +58,13 @@ public class RequestResponseController {
         if (desc)
             sort = sort.descending();
 
-        Page<Request> requestPage = requestRepository.findByTopic(topic,PageRequest.of(page, size, sort));
+        Page<Request> requestPage = requestRepository.findByTopic(topic, PageRequest.of(page, size, sort));
         return requestPage;
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Request updateRequest(@PathVariable("id") String id, @Valid @RequestBody Request request){
+    public Request updateRequest(@PathVariable("id") String id, @Valid @RequestBody Request request) {
         if (requestRepository.existsById(id)) {
             request.set_id(id);
             requestRepository.save(request);
@@ -67,7 +76,7 @@ public class RequestResponseController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public String deleteRequest(@PathVariable("id") String id){
+    public String deleteRequest(@PathVariable("id") String id) {
         if (requestRepository.existsById(id)) {
             requestRepository.deleteById(id);
             return "Deleted";
@@ -77,28 +86,27 @@ public class RequestResponseController {
     }
 
 
-
     @PostMapping("/{requestId}/responses")
     @ResponseStatus(HttpStatus.CREATED)
     public Request addResponse(@PathVariable("requestId") String requestId, @Valid @RequestBody Response response) {
         Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
-        if(request.getResponses()==null)
+        if (request.getResponses() == null)
             request.setResponses(new ArrayList<>());
         request.getResponses().add(response);
         return requestRepository.save(request);
     }
 
     @GetMapping("/{requestId}/responses")
-    public List<Response> getResponse(@PathVariable("requestId") String requestId){
+    public List<Response> getResponse(@PathVariable("requestId") String requestId) {
         Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
         return request.getResponses();
     }
 
     @PutMapping("/{requestId}/responses/{responsesId}")
     @ResponseStatus(HttpStatus.OK)
-    public Response updateResponse(@PathVariable("requestId") String requestId,@PathVariable("responsesId") String responsesId,@Valid @RequestBody Response response){
+    public Response updateResponse(@PathVariable("requestId") String requestId, @PathVariable("responsesId") String responsesId, @Valid @RequestBody Response response) {
         Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
-        if(request.getResponses()!=null) {
+        if (request.getResponses() != null) {
             for (Response res : request.getResponses()) {
                 if (res.get_id().equals(responsesId)) {
                     res.setExpertId(response.getExpertId());
@@ -114,9 +122,9 @@ public class RequestResponseController {
 
     @DeleteMapping("/{requestId}/responses/{responsesId}")
     @ResponseStatus(HttpStatus.OK)
-    public String deleteAnswer(@PathVariable("requestId") String requestId,@PathVariable("responsesId") String responseId){
+    public String deleteAnswer(@PathVariable("requestId") String requestId, @PathVariable("responsesId") String responseId) {
         Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
-        if(request.getResponses()!=null) {
+        if (request.getResponses() != null) {
             for (Response res : request.getResponses()) {
                 if (res.get_id().equals(responseId)) {
                     request.getResponses().remove(res);
