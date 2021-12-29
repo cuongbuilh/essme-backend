@@ -56,7 +56,8 @@ public class AnswerQuestionController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Question addQuestion(@Valid @RequestBody Question question) {
+    public Question addQuestion(AuthenticatedRequest request,@Valid @RequestBody Question question) {
+        question.setUid(request.getUserId());
         questionRepository.save(question);
         return questionRepository.save(question);
     }
