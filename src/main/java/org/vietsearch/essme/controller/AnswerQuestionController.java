@@ -143,9 +143,10 @@ public class AnswerQuestionController {
                     questionRepository.save(question);
                     return answer1;
                 }
+                else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
         }
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Answer not found", null);
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
     }
 
     @DeleteMapping("/{questionId}/answers/{answerId}")
@@ -160,6 +161,7 @@ public class AnswerQuestionController {
                     questionRepository.save(question);
                     return "Deleted";
                 }
+                else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Answer not found", null);

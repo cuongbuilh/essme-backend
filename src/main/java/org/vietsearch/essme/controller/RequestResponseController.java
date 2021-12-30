@@ -132,6 +132,7 @@ public class RequestResponseController {
                     requestRepository.save(request);
                     return res;
                 }
+                else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Response not found", null);
@@ -149,6 +150,7 @@ public class RequestResponseController {
                     requestRepository.save(request);
                     return "Deleted";
                 }
+                else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Response not found", null);
