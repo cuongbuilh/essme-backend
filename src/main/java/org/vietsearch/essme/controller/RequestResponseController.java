@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 import org.vietsearch.essme.filter.AuthenticatedRequest;
 import org.vietsearch.essme.repository.RequestResponseRepository;
 import org.vietsearch.essme.model.request_response.*;
+import org.vietsearch.essme.repository.direct_request.DirectRequestRepository;
 
 import javax.validation.Valid;
 import java.util.ArrayList;
@@ -25,11 +26,9 @@ public class RequestResponseController {
     @Autowired
     private RequestResponseRepository requestRepository;
 
-    @DeleteMapping("/test")
-    @ResponseStatus(HttpStatus.OK)
-    public String testPrincipal(AuthenticatedRequest request) throws FirebaseAuthException {
-        return request.getUserId();
-    }
+    @Autowired
+    private DirectRequestRepository directRequestRepository;
+
 
     @GetMapping
     public Page<Request> getRequests(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "20") int size, @RequestParam(value = "sort", defaultValue = "createdAt") String sortAttr, @RequestParam(value = "desc", defaultValue = "false") boolean desc) {
@@ -65,6 +64,7 @@ public class RequestResponseController {
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
+
     public Request updateRequest(AuthenticatedRequest authenticatedRequest,@PathVariable("id") String id, @Valid @RequestBody Request request) {
         String uuid = authenticatedRequest.getUserId();
         if (requestRepository.existsById(id)) {
@@ -100,7 +100,6 @@ public class RequestResponseController {
         }
     }
 
-
     @PostMapping("/{requestId}/responses")
     @ResponseStatus(HttpStatus.CREATED)
     public Request addResponse(AuthenticatedRequest authenticatedRequest, @PathVariable("requestId") String requestId, @Valid @RequestBody Response response) {
@@ -120,6 +119,7 @@ public class RequestResponseController {
 
     @PutMapping("/{requestId}/responses/{responsesId}")
     @ResponseStatus(HttpStatus.OK)
+
     public Response updateResponse(AuthenticatedRequest authenticatedRequest,@PathVariable("requestId") String requestId, @PathVariable("responsesId") String responsesId, @Valid @RequestBody Response response) {
         String uuid = authenticatedRequest.getUserId();
         Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
@@ -156,6 +156,7 @@ public class RequestResponseController {
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Response not found", null);
     }
 
+
     private boolean matchUserRequest(String uuid, String requestId){
         // return true if uuid created request
         Optional<Request> optional = requestRepository.findById(requestId);
@@ -167,6 +168,53 @@ public class RequestResponseController {
         if(!response.get_id().equals(responseChangedId))
             return false;
         return response.getExpertId().equals(uuid);
+    }
+
+
+    @GetMapping("/direct/{requestId}")
+    @ResponseStatus(HttpStatus.OK)
+    public DirectRequest findDirectRequestById(@PathVariable("requestId") String id) {
+        return directRequestRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Direct request not found"));
+
+    }
+
+    @GetMapping("/direct/expert/{expertId}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<DirectRequest> findDirectRequestByExpertId(@PathVariable("expertId") String id) {
+        return directRequestRepository.findDirectRequestByExpertId(id);
+    }
+
+    @GetMapping("/direct/customer/{customerId}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<DirectRequest> findDirectRequestByCustomerId(@PathVariable("customerId") String id) {
+        return directRequestRepository.findDirectRequestByCustomerId(id);
+    }
+
+    @PostMapping("/direct")
+    @ResponseStatus(HttpStatus.CREATED)
+    public DirectRequest addDirectRequest(@Valid @RequestBody DirectRequest request) {
+        Date createAt = new Date();
+        request.setCreateAt(createAt);
+        request.setLastUpdatedAt(createAt);
+        request.setStatus(DirectRequest.Status.CONSIDERING);
+        return directRequestRepository.insert(request);
+    }
+
+    @PutMapping("/direct/{requestId}")
+    @ResponseStatus(HttpStatus.OK)
+    public DirectRequest updateDirectRequest(@PathVariable("requestId") String id,@Valid @RequestBody DirectRequest request) {
+        // FE side save createAt value then add into request
+        request.setLastUpdatedAt(new Date());
+        request.set_id(id);
+        return directRequestRepository.save(request);
+    }
+
+    @DeleteMapping("/direct/{requestId}")
+    @ResponseStatus(HttpStatus.OK)
+    public String deleteDirectRequest(@PathVariable("requestId") String id) {
+        directRequestRepository.deleteById(id);
+        return "Deleted request: " + id;
     }
 
 }
