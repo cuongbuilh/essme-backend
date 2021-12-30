@@ -69,7 +69,8 @@ public class ExpertController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Expert createUser(@Valid @RequestBody Expert expert) {
+    public Expert createUser(AuthenticatedRequest request, @Valid @RequestBody Expert expert) {
+        expert.setUid(request.getUserId());
         return expertRepository.save(expert);
     }
 

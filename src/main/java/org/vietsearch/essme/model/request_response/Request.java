@@ -49,4 +49,8 @@ public class Request {
     @Field("customer_id")
     @NotNull
     private String customerId;
+
+    @JsonProperty("uid")
+    @Field("uid")
+    private String uid;
 }

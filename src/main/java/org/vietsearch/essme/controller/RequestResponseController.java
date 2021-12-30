@@ -103,10 +103,11 @@ public class RequestResponseController {
 
     @PostMapping("/{requestId}/responses")
     @ResponseStatus(HttpStatus.CREATED)
-    public Request addResponse(@PathVariable("requestId") String requestId, @Valid @RequestBody Response response) {
+    public Request addResponse(AuthenticatedRequest authenticatedRequest, @PathVariable("requestId") String requestId, @Valid @RequestBody Response response) {
         Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
         if (request.getResponses() == null)
             request.setResponses(new ArrayList<>());
+        response.setUid(authenticatedRequest.getUserId());
         request.getResponses().add(response);
         return requestRepository.save(request);
     }
