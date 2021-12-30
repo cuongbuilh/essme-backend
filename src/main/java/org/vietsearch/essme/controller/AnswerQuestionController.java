@@ -99,10 +99,11 @@ public class AnswerQuestionController {
 
     @PostMapping("/{questionId}/answers")
     @ResponseStatus(HttpStatus.CREATED)
-    public Question addAnswer(@PathVariable("questionId") String questionId, @Valid @RequestBody Answer answer) {
+    public Question addAnswer(AuthenticatedRequest request, @PathVariable("questionId") String questionId, @Valid @RequestBody Answer answer) {
         Question question = questionRepository.findById(questionId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found", null));
         if(question.getAnswers()==null)
             question.setAnswers(new ArrayList<>());
+        answer.setUid(request.getUserId());
         question.getAnswers().add(answer);
         return questionRepository.save(question);
     }
