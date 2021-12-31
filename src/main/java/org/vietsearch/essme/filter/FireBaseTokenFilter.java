@@ -5,10 +5,11 @@ import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import com.google.firebase.auth.UserRecord;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-import org.springframework.web.server.ResponseStatusException;
+import org.vietsearch.essme.model.user.User;
+import org.vietsearch.essme.repository.UserRepository;
 
 
 import javax.servlet.FilterChain;
@@ -17,7 +18,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+@Component
 public class FireBaseTokenFilter extends OncePerRequestFilter {
+    @Autowired
+    private UserRepository userRepository;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain) throws ServletException, IOException {
@@ -33,14 +37,13 @@ public class FireBaseTokenFilter extends OncePerRequestFilter {
                     String token = authenticationHeader.split(" ")[1];
                     //verifies token to firebase server
                     decodedToken = FirebaseAuth.getInstance().verifyIdToken(token);
-
                     //if token is invalid
                     if (decodedToken == null) {
                         response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token!");
                     }
                     else {
                         String uid = decodedToken.getUid();
-                        System.out.println(FirebaseAuth.getInstance().getUser(uid).getEmail());
+                        saveUser(uid);
                         AuthenticatedRequest authenticatedRequest = new AuthenticatedRequest(request, uid);
                         chain.doFilter(authenticatedRequest, response);
                     }
@@ -50,5 +53,17 @@ public class FireBaseTokenFilter extends OncePerRequestFilter {
             }
         }
         else chain.doFilter(new AuthenticatedRequest(request,null),response);
+    }
+
+    public void saveUser(String uid) throws FirebaseAuthException {
+        UserRecord userRecord = FirebaseAuth.getInstance().getUser(uid);
+        System.out.println(userRecord.getEmail());
+        User user = new User();
+        user.setUid(uid);
+        user.setEmail(userRecord.getEmail());
+        user.setDisplayName(userRecord.getDisplayName());
+        user.setPhoneNumber(userRecord.getPhoneNumber());
+        user.setPhotoURL(userRecord.getPhotoUrl());
+        userRepository.save(user);
     }
 }

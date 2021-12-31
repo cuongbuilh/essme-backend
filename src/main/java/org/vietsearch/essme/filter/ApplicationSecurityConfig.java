@@ -1,5 +1,6 @@
 package org.vietsearch.essme.filter;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 
@@ -12,6 +13,8 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
+    @Autowired
+    private FireBaseTokenFilter fireBaseTokenFilter;
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -24,8 +27,6 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .antMatchers("/**").permitAll()
                 .and()
                 .csrf().disable()
-                .addFilterBefore(new FireBaseTokenFilter(), UsernamePasswordAuthenticationFilter.class);
-                .cors().and().csrf().disable().addFilterBefore(new FireBaseTokenFilter(),UsernamePasswordAuthenticationFilter.class);
-
+                .addFilterBefore(fireBaseTokenFilter, UsernamePasswordAuthenticationFilter.class);
     }
 }
