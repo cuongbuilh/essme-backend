@@ -29,5 +29,6 @@ public class Expert {
 
     @JsonProperty("uid")
     @Field("uid")
+    // uid is id provided by firebase
     private String uid;
 }

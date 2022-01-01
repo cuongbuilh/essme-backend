@@ -1,6 +1,5 @@
 package org.vietsearch.essme.controller;
 
-import com.google.firebase.auth.FirebaseAuthException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -10,9 +9,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.vietsearch.essme.filter.AuthenticatedRequest;
+import org.vietsearch.essme.model.expert.Expert;
 import org.vietsearch.essme.repository.RequestResponseRepository;
 import org.vietsearch.essme.model.request_response.*;
+import org.vietsearch.essme.repository.UserRepository;
 import org.vietsearch.essme.repository.direct_request.DirectRequestRepository;
+import org.vietsearch.essme.repository.experts.ExpertRepository;
 
 import javax.validation.Valid;
 import java.util.ArrayList;
@@ -28,6 +30,12 @@ public class RequestResponseController {
 
     @Autowired
     private DirectRequestRepository directRequestRepository;
+
+    @Autowired
+    private ExpertRepository expertRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
 
     @GetMapping
@@ -65,11 +73,11 @@ public class RequestResponseController {
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
 
-    public Request updateRequest(AuthenticatedRequest authenticatedRequest,@PathVariable("id") String id, @Valid @RequestBody Request request) {
+    public Request updateRequest(AuthenticatedRequest authenticatedRequest, @PathVariable("id") String id, @Valid @RequestBody Request request) {
         String uuid = authenticatedRequest.getUserId();
         if (requestRepository.existsById(id)) {
             // check
-            if(!matchUserRequest(uuid, id)){
+            if (!matchUserRequest(uuid, id)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
 
@@ -84,11 +92,11 @@ public class RequestResponseController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public String deleteRequest(AuthenticatedRequest authenticatedRequest,@PathVariable("id") String id) {
+    public String deleteRequest(AuthenticatedRequest authenticatedRequest, @PathVariable("id") String id) {
         String uuid = authenticatedRequest.getUserId();
         if (requestRepository.existsById(id)) {
             // check
-            if(!matchUserRequest(uuid, id)){
+            if (!matchUserRequest(uuid, id)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
 
@@ -120,19 +128,18 @@ public class RequestResponseController {
     @PutMapping("/{requestId}/responses/{responsesId}")
     @ResponseStatus(HttpStatus.OK)
 
-    public Response updateResponse(AuthenticatedRequest authenticatedRequest,@PathVariable("requestId") String requestId, @PathVariable("responsesId") String responsesId, @Valid @RequestBody Response response) {
+    public Response updateResponse(AuthenticatedRequest authenticatedRequest, @PathVariable("requestId") String requestId, @PathVariable("responsesId") String responsesId, @Valid @RequestBody Response response) {
         String uuid = authenticatedRequest.getUserId();
         Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
         if (request.getResponses() != null) {
             for (Response res : request.getResponses()) {
-                if (matchUserResponse(uuid, responsesId, res)) {
+                if (matchExpertResponse(uuid, responsesId, res)) {
                     res.setExpertId(response.getExpertId());
                     res.setContent(response.getContent());
                     res.setUpdatedAt(new Date());
                     requestRepository.save(request);
                     return res;
-                }
-                else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
+                } else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Response not found", null);
@@ -145,29 +152,38 @@ public class RequestResponseController {
         Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
         if (request.getResponses() != null) {
             for (Response res : request.getResponses()) {
-                if (matchUserResponse(uuid, responseId, res)) {
+                if (matchExpertResponse(uuid, responseId, res)) {
                     request.getResponses().remove(res);
                     requestRepository.save(request);
                     return "Deleted";
-                }
-                else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
+                } else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Response not found", null);
     }
 
 
-    private boolean matchUserRequest(String uuid, String requestId){
-        // return true if uuid created request
+    /*
+     * uuid : firebase uuid
+     * return true if uuid created request
+     */
+    private boolean matchUserRequest(String uuid, String requestId) {
         Optional<Request> optional = requestRepository.findById(requestId);
+//        User user = userRepository.findByUid(uuid);
+        //
         return optional.map(res -> res.getCustomerId().equals(uuid)).orElse(false);
     }
 
-    private boolean matchUserResponse(String uuid, String responseChangedId, Response response){
-        // return true if uuid created response
-        if(!response.get_id().equals(responseChangedId))
+    /*
+     * uuid : firebase uuid
+     * return true if uuid created response
+     */
+    private boolean matchExpertResponse(String uuid, String responseChangedId, Response response) {
+        if (!response.get_id().equals(responseChangedId))
             return false;
-        return response.getExpertId().equals(uuid);
+        Expert expert = expertRepository.findByUid(uuid);
+        // because expertId is _id in db
+        return response.getExpertId().equals(expert.get_id());
     }
 
 
@@ -203,7 +219,7 @@ public class RequestResponseController {
 
     @PutMapping("/direct/{requestId}")
     @ResponseStatus(HttpStatus.OK)
-    public DirectRequest updateDirectRequest(@PathVariable("requestId") String id,@Valid @RequestBody DirectRequest request) {
+    public DirectRequest updateDirectRequest(@PathVariable("requestId") String id, @Valid @RequestBody DirectRequest request) {
         // FE side save createAt value then add into request
         request.setLastUpdatedAt(new Date());
         request.set_id(id);
