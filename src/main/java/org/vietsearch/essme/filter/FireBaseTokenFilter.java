@@ -55,7 +55,7 @@ public class FireBaseTokenFilter extends OncePerRequestFilter {
         else chain.doFilter(new AuthenticatedRequest(request,null),response);
     }
 
-    public void saveUser(String uid) throws FirebaseAuthException {
+    private void saveUser(String uid) throws FirebaseAuthException {
         UserRecord userRecord = FirebaseAuth.getInstance().getUser(uid);
         System.out.println(userRecord.getEmail());
         User user = new User();
