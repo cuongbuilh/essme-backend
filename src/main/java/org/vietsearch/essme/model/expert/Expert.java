@@ -26,4 +26,8 @@ public class Expert {
     @NotNull
     @Valid
     private Source source;
+
+    @JsonProperty("uid")
+    @Field("uid")
+    private String uid;
 }

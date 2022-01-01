@@ -1,6 +1,5 @@
 package org.vietsearch.essme.controller;
 
-import com.google.api.client.util.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -9,17 +8,16 @@ import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.vietsearch.essme.filter.AuthenticatedRequest;
 import org.vietsearch.essme.model.answer_question.Answer;
 import org.vietsearch.essme.model.answer_question.Question;
-import org.vietsearch.essme.model.expert.Expert;
 import org.vietsearch.essme.repository.AnswerQuestionRepository;
 
 import javax.validation.Valid;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/questions")
@@ -58,15 +56,22 @@ public class AnswerQuestionController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Question addQuestion(@Valid @RequestBody Question question) {
+    public Question addQuestion(AuthenticatedRequest request,@Valid @RequestBody Question question) {
+        question.setUid(request.getUserId());
         questionRepository.save(question);
         return questionRepository.save(question);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Question updateQuestion(@PathVariable("id") String id,@Valid @RequestBody Question question){
+    public Question updateQuestion(AuthenticatedRequest request,@PathVariable("id") String id,@Valid @RequestBody Question question){
+        String uuid = request.getUserId();
         if (questionRepository.existsById(id)) {
+            // check id
+            if(!matchUserQuestion(uuid, id)){
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
+            }
+            // update
             question.set_id(id);
             questionRepository.save(question);
             return question;
@@ -77,8 +82,14 @@ public class AnswerQuestionController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public String deleteQuestion(@PathVariable("id") String id){
+    public String deleteQuestion(AuthenticatedRequest request, @PathVariable("id") String id){
+        String uuid = request.getUserId();
         if (questionRepository.existsById(id)) {
+            // check id
+            if(!matchUserQuestion(uuid, id)){
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
+            }
+            // delete
             questionRepository.deleteById(id);
             return "Deleted";
         } else {
@@ -88,10 +99,11 @@ public class AnswerQuestionController {
 
     @PostMapping("/{questionId}/answers")
     @ResponseStatus(HttpStatus.CREATED)
-    public Question addAnswer(@PathVariable("questionId") String questionId, @Valid @RequestBody Answer answer) {
+    public Question addAnswer(AuthenticatedRequest request, @PathVariable("questionId") String questionId, @Valid @RequestBody Answer answer) {
         Question question = questionRepository.findById(questionId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found", null));
         if(question.getAnswers()==null)
             question.setAnswers(new ArrayList<>());
+        answer.setUid(request.getUserId());
         question.getAnswers().add(answer);
         return questionRepository.save(question);
     }
@@ -118,11 +130,12 @@ public class AnswerQuestionController {
 
     @PutMapping("/{questionId}/answers/{answerId}")
     @ResponseStatus(HttpStatus.OK)
-    public Answer updateAnswer(@PathVariable("questionId") String questionId,@PathVariable("answerId") String answerId,@Valid @RequestBody Answer answer){
+    public Answer updateAnswer(AuthenticatedRequest request,@PathVariable("questionId") String questionId,@PathVariable("answerId") String answerId,@Valid @RequestBody Answer answer){
+        String uuid = request.getUserId();
         Question question = questionRepository.findById(questionId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found", null));
         if(question.getAnswers()!=null) {
             for (Answer answer1 : question.getAnswers()) {
-                if (answer1.get_id().equals(answerId)) {
+                if (matchUserAnswer(uuid, answerId, answer1)) {
                     answer1.setExpertId(answer.getExpertId());
                     answer1.setAnswer(answer.getAnswer());
                     answer1.setUpdatedAt(new Date());
@@ -130,22 +143,25 @@ public class AnswerQuestionController {
                     questionRepository.save(question);
                     return answer1;
                 }
+                else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
         }
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Answer not found", null);
+        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
     }
 
     @DeleteMapping("/{questionId}/answers/{answerId}")
     @ResponseStatus(HttpStatus.OK)
-    public String deleteAnswer(@PathVariable("questionId") String questionId,@PathVariable("answerId") String answerId){
+    public String deleteAnswer(AuthenticatedRequest request ,@PathVariable("questionId") String questionId,@PathVariable("answerId") String answerId){
+        String uuid = request.getUserId();
         Question question = questionRepository.findById(questionId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found", null));
         if(question.getAnswers()!=null) {
             for (Answer answer1 : question.getAnswers()) {
-                if (answer1.get_id().equals(answerId)) {
+                if (matchUserAnswer(uuid, answerId, answer1)) {
                     question.getAnswers().remove(answer1);
                     questionRepository.save(question);
                     return "Deleted";
                 }
+                else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Answer not found", null);
@@ -159,5 +175,19 @@ public class AnswerQuestionController {
     @GetMapping("/byExpertId/{ExpertId}")
     public List<Question> getQuestionbyexpertId(@PathVariable("ExpertId") String expertId){
         return questionRepository.findByAnswersExpertId(expertId);
+    }
+
+
+    private boolean matchUserQuestion(String uuid, String questionID){
+        // return true if uuid created question
+        Optional<Question> optional= questionRepository.findById(questionID);
+        return optional.map(question -> question.getCustomerId().equals(uuid)).orElse(false);
+    }
+
+    private boolean matchUserAnswer(String uuid, String answerChangedId , Answer answer){
+        // return true if uuid created answer
+        if(!answer.get_id().equals(answerChangedId))
+            return false;
+        return answer.getExpertId().equals(uuid);
     }
 }
