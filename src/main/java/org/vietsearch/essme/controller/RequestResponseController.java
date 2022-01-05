@@ -160,14 +160,14 @@ public class RequestResponseController {
     private boolean matchUserRequest(String uuid, String requestId){
         // return true if uuid created request
         Optional<Request> optional = requestRepository.findById(requestId);
-        return optional.map(res -> res.getCustomerId().equals(uuid)).orElse(false);
+        return optional.map(res -> res.getUid().equals(uuid)).orElse(false);
     }
 
     private boolean matchUserResponse(String uuid, String responseChangedId, Response response){
         // return true if uuid created response
         if(!response.get_id().equals(responseChangedId))
             return false;
-        return response.getExpertId().equals(uuid);
+        return response.getUid().equals(uuid);
     }
 
 

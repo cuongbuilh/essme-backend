@@ -181,13 +181,13 @@ public class AnswerQuestionController {
     private boolean matchUserQuestion(String uuid, String questionID){
         // return true if uuid created question
         Optional<Question> optional= questionRepository.findById(questionID);
-        return optional.map(question -> question.getCustomerId().equals(uuid)).orElse(false);
+        return optional.map(question -> question.getUid().equals(uuid)).orElse(false);
     }
 
     private boolean matchUserAnswer(String uuid, String answerChangedId , Answer answer){
         // return true if uuid created answer
         if(!answer.get_id().equals(answerChangedId))
             return false;
-        return answer.getExpertId().equals(uuid);
+        return answer.getUid().equals(uuid);
     }
 }
