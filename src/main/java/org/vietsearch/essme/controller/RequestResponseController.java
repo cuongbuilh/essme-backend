@@ -74,6 +74,7 @@ public class RequestResponseController {
             }
 
             // update
+            request.setUid(uuid);
             request.set_id(id);
             requestRepository.save(request);
             return request;
@@ -126,13 +127,13 @@ public class RequestResponseController {
         if (request.getResponses() != null) {
             for (Response res : request.getResponses()) {
                 if (matchUserResponse(uuid, responsesId, res)) {
+                    res.setUid(uuid);
                     res.setExpertId(response.getExpertId());
                     res.setContent(response.getContent());
                     res.setUpdatedAt(new Date());
                     requestRepository.save(request);
                     return res;
                 }
-                else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Response not found", null);
@@ -150,7 +151,6 @@ public class RequestResponseController {
                     requestRepository.save(request);
                     return "Deleted";
                 }
-                else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Response not found", null);
@@ -167,6 +167,8 @@ public class RequestResponseController {
         // return true if uuid created response
         if(!response.get_id().equals(responseChangedId))
             return false;
+        if(!response.getUid().equals(uuid))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
         return response.getUid().equals(uuid);
     }
 

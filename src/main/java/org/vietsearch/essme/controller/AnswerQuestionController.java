@@ -73,6 +73,7 @@ public class AnswerQuestionController {
             }
             // update
             question.set_id(id);
+            question.setUid(uuid);
             questionRepository.save(question);
             return question;
         } else {
@@ -136,6 +137,7 @@ public class AnswerQuestionController {
         if(question.getAnswers()!=null) {
             for (Answer answer1 : question.getAnswers()) {
                 if (matchUserAnswer(uuid, answerId, answer1)) {
+                    answer1.setUid(uuid);
                     answer1.setExpertId(answer.getExpertId());
                     answer1.setAnswer(answer.getAnswer());
                     answer1.setUpdatedAt(new Date());
@@ -143,10 +145,9 @@ public class AnswerQuestionController {
                     questionRepository.save(question);
                     return answer1;
                 }
-                else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
         }
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Answer not found", null);
     }
 
     @DeleteMapping("/{questionId}/answers/{answerId}")
@@ -161,7 +162,6 @@ public class AnswerQuestionController {
                     questionRepository.save(question);
                     return "Deleted";
                 }
-                else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Answer not found", null);
@@ -188,6 +188,8 @@ public class AnswerQuestionController {
         // return true if uuid created answer
         if(!answer.get_id().equals(answerChangedId))
             return false;
+        if(!answer.getUid().equals(uuid))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
         return answer.getUid().equals(uuid);
     }
 }

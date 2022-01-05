@@ -63,6 +63,7 @@ public class ExpertController {
         if(!matchExpert(uuid, id)){
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
         }
+        expert.setUid(uuid);
         expert.set_id(id);
         return expertRepository.save(expert);
     }
