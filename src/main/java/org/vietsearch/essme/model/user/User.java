@@ -28,4 +28,8 @@ public class User {
     @JsonProperty("phoneNumber")
     @Field("phoneNumber")
     String phoneNumber;
+
+    @JsonProperty(value = "role")
+    @Field("role")
+    Role role;
 }
