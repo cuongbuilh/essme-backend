@@ -1,6 +1,10 @@
 package org.vietsearch.essme.filter;
 
+import io.swagger.v3.oas.models.Components;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.security.SecurityScheme;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 
@@ -28,5 +32,14 @@ public class ApplicationSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .csrf().disable()
                 .addFilterBefore(fireBaseTokenFilter, UsernamePasswordAuthenticationFilter.class);
+    }
+
+    @Bean
+    public OpenAPI customOpenAPI() {
+        return new OpenAPI()
+                .components(new Components()
+                        .addSecuritySchemes(("bearer-key"),
+                                new SecurityScheme().type(SecurityScheme.Type.HTTP)
+                                        .scheme("bearer").bearerFormat("JWT")));
     }
 }

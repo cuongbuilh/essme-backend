@@ -1,6 +1,7 @@
 package org.vietsearch.essme.controller;
 
-import com.google.firebase.auth.FirebaseAuthException;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -10,9 +11,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.vietsearch.essme.filter.AuthenticatedRequest;
+import org.vietsearch.essme.model.expert.Expert;
 import org.vietsearch.essme.repository.RequestResponseRepository;
 import org.vietsearch.essme.model.request_response.*;
+import org.vietsearch.essme.repository.UserRepository;
 import org.vietsearch.essme.repository.direct_request.DirectRequestRepository;
+import org.vietsearch.essme.repository.experts.ExpertRepository;
 
 import javax.validation.Valid;
 import java.util.ArrayList;
@@ -28,6 +32,12 @@ public class RequestResponseController {
 
     @Autowired
     private DirectRequestRepository directRequestRepository;
+
+    @Autowired
+    private ExpertRepository expertRepository;
+
+    @Autowired
+    private UserRepository userRepository;
 
 
     @GetMapping
@@ -64,12 +74,12 @@ public class RequestResponseController {
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-
-    public Request updateRequest(AuthenticatedRequest authenticatedRequest,@PathVariable("id") String id, @Valid @RequestBody Request request) {
+    @SecurityRequirement(name = "bearer-key")
+    public Request updateRequest(AuthenticatedRequest authenticatedRequest, @PathVariable("id") String id, @Valid @RequestBody Request request) {
         String uuid = authenticatedRequest.getUserId();
         if (requestRepository.existsById(id)) {
             // check
-            if(!matchUserRequest(uuid, id)){
+            if (!matchUserRequest(uuid, id)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
 
@@ -85,11 +95,12 @@ public class RequestResponseController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public String deleteRequest(AuthenticatedRequest authenticatedRequest,@PathVariable("id") String id) {
+    @SecurityRequirement(name = "bearer-key")
+    public String deleteRequest(AuthenticatedRequest authenticatedRequest, @PathVariable("id") String id) {
         String uuid = authenticatedRequest.getUserId();
         if (requestRepository.existsById(id)) {
             // check
-            if(!matchUserRequest(uuid, id)){
+            if (!matchUserRequest(uuid, id)) {
                 throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
             }
 
@@ -103,6 +114,7 @@ public class RequestResponseController {
 
     @PostMapping("/{requestId}/responses")
     @ResponseStatus(HttpStatus.CREATED)
+    @SecurityRequirement(name = "bearer-key")
     public Request addResponse(AuthenticatedRequest authenticatedRequest, @PathVariable("requestId") String requestId, @Valid @RequestBody Response response) {
         Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
         if (request.getResponses() == null)
@@ -120,8 +132,8 @@ public class RequestResponseController {
 
     @PutMapping("/{requestId}/responses/{responsesId}")
     @ResponseStatus(HttpStatus.OK)
-
-    public Response updateResponse(AuthenticatedRequest authenticatedRequest,@PathVariable("requestId") String requestId, @PathVariable("responsesId") String responsesId, @Valid @RequestBody Response response) {
+    @SecurityRequirement(name = "bearer-key")
+    public Response updateResponse(AuthenticatedRequest authenticatedRequest, @PathVariable("requestId") String requestId, @PathVariable("responsesId") String responsesId, @Valid @RequestBody Response response) {
         String uuid = authenticatedRequest.getUserId();
         Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
         if (request.getResponses() != null) {
@@ -141,12 +153,13 @@ public class RequestResponseController {
 
     @DeleteMapping("/{requestId}/responses/{responsesId}")
     @ResponseStatus(HttpStatus.OK)
+    @SecurityRequirement(name = "bearer-key")
     public String deleteResponse(AuthenticatedRequest authenticatedRequest, @PathVariable("requestId") String requestId, @PathVariable("responsesId") String responseId) {
         String uuid = authenticatedRequest.getUserId();
         Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
         if (request.getResponses() != null) {
             for (Response res : request.getResponses()) {
-                if (matchUserResponse(uuid, responseId, res)) {
+                if (matchExpertResponse(uuid, responseId, res)) {
                     request.getResponses().remove(res);
                     requestRepository.save(request);
                     return "Deleted";
@@ -157,15 +170,21 @@ public class RequestResponseController {
     }
 
 
-    private boolean matchUserRequest(String uuid, String requestId){
-        // return true if uuid created request
+    /*
+     * uuid : firebase uuid
+     * return true if uuid created request
+     */
+    private boolean matchUserRequest(String uuid, String requestId) {
         Optional<Request> optional = requestRepository.findById(requestId);
         return optional.map(res -> res.getUid().equals(uuid)).orElse(false);
     }
 
-    private boolean matchUserResponse(String uuid, String responseChangedId, Response response){
-        // return true if uuid created response
-        if(!response.get_id().equals(responseChangedId))
+    /*
+     * uuid : firebase uuid
+     * return true if uuid created response
+     */
+    private boolean matchExpertResponse(String uuid, String responseChangedId, Response response) {
+        if (!response.get_id().equals(responseChangedId))
             return false;
         if(!response.getUid().equals(uuid))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
@@ -205,7 +224,8 @@ public class RequestResponseController {
 
     @PutMapping("/direct/{requestId}")
     @ResponseStatus(HttpStatus.OK)
-    public DirectRequest updateDirectRequest(@PathVariable("requestId") String id,@Valid @RequestBody DirectRequest request) {
+    @SecurityRequirement(name = "bearer-key")
+    public DirectRequest updateDirectRequest(AuthenticatedRequest authenticatedRequest,@PathVariable("requestId") String id, @Valid @RequestBody DirectRequest request) {
         // FE side save createAt value then add into request
         request.setLastUpdatedAt(new Date());
         request.set_id(id);
@@ -214,7 +234,8 @@ public class RequestResponseController {
 
     @DeleteMapping("/direct/{requestId}")
     @ResponseStatus(HttpStatus.OK)
-    public String deleteDirectRequest(@PathVariable("requestId") String id) {
+    @SecurityRequirement(name = "bearer-key")
+    public String deleteDirectRequest(AuthenticatedRequest authenticatedRequest,@PathVariable("requestId") String id) {
         directRequestRepository.deleteById(id);
         return "Deleted request: " + id;
     }
