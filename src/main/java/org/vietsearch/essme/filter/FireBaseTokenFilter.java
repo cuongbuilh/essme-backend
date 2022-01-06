@@ -6,8 +6,11 @@ import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;
 import com.google.firebase.auth.UserRecord;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import org.springframework.web.server.ResponseStatusException;
+import org.vietsearch.essme.model.user.Role;
 import org.vietsearch.essme.model.user.User;
 import org.vietsearch.essme.repository.UserRepository;
 
@@ -43,8 +46,7 @@ public class FireBaseTokenFilter extends OncePerRequestFilter {
                     }
                     else {
                         String uid = decodedToken.getUid();
-                        saveUser(uid);
-                        AuthenticatedRequest authenticatedRequest = new AuthenticatedRequest(request, uid);
+                        AuthenticatedRequest authenticatedRequest = new AuthenticatedRequest(request, uid,saveUser(uid));
                         chain.doFilter(authenticatedRequest, response);
                     }
                 } catch (FirebaseAuthException e) {
@@ -52,11 +54,16 @@ public class FireBaseTokenFilter extends OncePerRequestFilter {
                 }
             }
         }
-        else chain.doFilter(new AuthenticatedRequest(request,null),response);
+        else chain.doFilter(new AuthenticatedRequest(request,null,null),response);
     }
 
-    private void saveUser(String uid) throws FirebaseAuthException {
+    private Role saveUser(String uid) throws FirebaseAuthException {
         UserRecord userRecord = FirebaseAuth.getInstance().getUser(uid);
+
+        User mongoUser = userRepository.findById(uid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found", null));
+        Role role = mongoUser.getRole();
+        System.out.println(role);
+
         System.out.println(userRecord.getEmail());
         User user = new User();
         user.setUid(uid);
@@ -64,6 +71,9 @@ public class FireBaseTokenFilter extends OncePerRequestFilter {
         user.setDisplayName(userRecord.getDisplayName());
         user.setPhoneNumber(userRecord.getPhoneNumber());
         user.setPhotoURL(userRecord.getPhotoUrl());
+        user.setRole(role);
         userRepository.save(user);
+
+        return role;
     }
 }

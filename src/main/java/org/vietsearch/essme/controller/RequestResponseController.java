@@ -84,6 +84,7 @@ public class RequestResponseController {
             }
 
             // update
+            request.setUid(uuid);
             request.set_id(id);
             requestRepository.save(request);
             return request;
@@ -137,13 +138,14 @@ public class RequestResponseController {
         Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
         if (request.getResponses() != null) {
             for (Response res : request.getResponses()) {
-                if (matchExpertResponse(uuid, responsesId, res)) {
+                if (matchUserResponse(uuid, responsesId, res)) {
+                    res.setUid(uuid);
                     res.setExpertId(response.getExpertId());
                     res.setContent(response.getContent());
                     res.setUpdatedAt(new Date());
                     requestRepository.save(request);
                     return res;
-                } else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
+                }
             }
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Response not found", null);
@@ -161,7 +163,7 @@ public class RequestResponseController {
                     request.getResponses().remove(res);
                     requestRepository.save(request);
                     return "Deleted";
-                } else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
+                }
             }
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Response not found", null);
@@ -174,9 +176,7 @@ public class RequestResponseController {
      */
     private boolean matchUserRequest(String uuid, String requestId) {
         Optional<Request> optional = requestRepository.findById(requestId);
-//        User user = userRepository.findByUid(uuid);
-        //
-        return optional.map(res -> res.getCustomerId().equals(uuid)).orElse(false);
+        return optional.map(res -> res.getUid().equals(uuid)).orElse(false);
     }
 
     /*
@@ -186,9 +186,9 @@ public class RequestResponseController {
     private boolean matchExpertResponse(String uuid, String responseChangedId, Response response) {
         if (!response.get_id().equals(responseChangedId))
             return false;
-        Expert expert = expertRepository.findByUid(uuid);
-        // because expertId is _id in db
-        return response.getExpertId().equals(expert.get_id());
+        if(!response.getUid().equals(uuid))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
+        return response.getUid().equals(uuid);
     }
 
 

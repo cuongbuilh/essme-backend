@@ -82,6 +82,7 @@ public class AnswerQuestionController {
             }
             // update
             question.set_id(id);
+            question.setUid(uuid);
             questionRepository.save(question);
             return question;
         } else {
@@ -147,17 +148,18 @@ public class AnswerQuestionController {
         Question question = questionRepository.findById(questionId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found", null));
         if (question.getAnswers() != null) {
             for (Answer answer1 : question.getAnswers()) {
-                if (matchExpertAnswer(uuid, answerId, answer1)) {
+                if (matchUserAnswer(uuid, answerId, answer1)) {
+                    answer1.setUid(uuid);
                     answer1.setExpertId(answer.getExpertId());
                     answer1.setAnswer(answer.getAnswer());
                     answer1.setUpdatedAt(new Date());
                     answer1.setVote(answer.getVote());
                     questionRepository.save(question);
                     return answer1;
-                } else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
+                }
             }
         }
-        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Answer not found", null);
     }
 
     @DeleteMapping("/{questionId}/answers/{answerId}")
@@ -172,7 +174,7 @@ public class AnswerQuestionController {
                     question.getAnswers().remove(answer1);
                     questionRepository.save(question);
                     return "Deleted";
-                } else throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
+                }
             }
         }
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Answer not found", null);
@@ -195,8 +197,8 @@ public class AnswerQuestionController {
      */
     private boolean matchUserQuestion(String uuid, String questionID) {
         // return true if uuid created question
-        Optional<Question> optional = questionRepository.findById(questionID);
-        return optional.map(question -> question.getCustomerId().equals(uuid)).orElse(false);
+        Optional<Question> optional= questionRepository.findById(questionID);
+        return optional.map(question -> question.getUid().equals(uuid)).orElse(false);
     }
 
     /*
@@ -206,8 +208,8 @@ public class AnswerQuestionController {
     private boolean matchExpertAnswer(String uuid, String answerChangedId, Answer answer) {
         if (!answer.get_id().equals(answerChangedId))
             return false;
-        Expert expert = expertRepository.findByUid(uuid);
-        // because answer.expertId = expert._id
-        return answer.getExpertId().equals(expert.get_id());
+        if(!answer.getUid().equals(uuid))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
+        return answer.getUid().equals(uuid);
     }
 }
