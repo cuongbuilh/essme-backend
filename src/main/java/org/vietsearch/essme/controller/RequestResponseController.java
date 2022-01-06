@@ -138,7 +138,7 @@ public class RequestResponseController {
         Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
         if (request.getResponses() != null) {
             for (Response res : request.getResponses()) {
-                if (matchUserResponse(uuid, responsesId, res)) {
+                if (matchExpertResponse(uuid, responsesId, res)) {
                     res.setUid(uuid);
                     res.setExpertId(response.getExpertId());
                     res.setContent(response.getContent());

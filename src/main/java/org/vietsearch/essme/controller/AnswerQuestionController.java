@@ -148,7 +148,7 @@ public class AnswerQuestionController {
         Question question = questionRepository.findById(questionId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found", null));
         if (question.getAnswers() != null) {
             for (Answer answer1 : question.getAnswers()) {
-                if (matchUserAnswer(uuid, answerId, answer1)) {
+                if (matchExpertAnswer(uuid, answerId, answer1)) {
                     answer1.setUid(uuid);
                     answer1.setExpertId(answer.getExpertId());
                     answer1.setAnswer(answer.getAnswer());
