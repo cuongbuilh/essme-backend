@@ -1,5 +1,6 @@
 package org.vietsearch.essme.controller;
 
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -62,6 +63,7 @@ public class AnswerQuestionController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @SecurityRequirement(name = "bearer-key")
     public Question addQuestion(AuthenticatedRequest request, @Valid @RequestBody Question question) {
         question.setUid(request.getUserId());
         questionRepository.save(question);
@@ -70,6 +72,7 @@ public class AnswerQuestionController {
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
+    @SecurityRequirement(name = "bearer-key")
     public Question updateQuestion(AuthenticatedRequest request, @PathVariable("id") String id, @Valid @RequestBody Question question) {
         String uuid = request.getUserId();
         if (questionRepository.existsById(id)) {
@@ -88,6 +91,7 @@ public class AnswerQuestionController {
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
+    @SecurityRequirement(name = "bearer-key")
     public String deleteQuestion(AuthenticatedRequest request, @PathVariable("id") String id) {
         String uuid = request.getUserId();
         if (questionRepository.existsById(id)) {
@@ -105,6 +109,7 @@ public class AnswerQuestionController {
 
     @PostMapping("/{questionId}/answers")
     @ResponseStatus(HttpStatus.CREATED)
+    @SecurityRequirement(name = "bearer-key")
     public Question addAnswer(AuthenticatedRequest request, @PathVariable("questionId") String questionId, @Valid @RequestBody Answer answer) {
         Question question = questionRepository.findById(questionId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found", null));
         if (question.getAnswers() == null)
@@ -136,6 +141,7 @@ public class AnswerQuestionController {
 
     @PutMapping("/{questionId}/answers/{answerId}")
     @ResponseStatus(HttpStatus.OK)
+    @SecurityRequirement(name = "bearer-key")
     public Answer updateAnswer(AuthenticatedRequest request, @PathVariable("questionId") String questionId, @PathVariable("answerId") String answerId, @Valid @RequestBody Answer answer) {
         String uuid = request.getUserId();
         Question question = questionRepository.findById(questionId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found", null));
@@ -156,6 +162,7 @@ public class AnswerQuestionController {
 
     @DeleteMapping("/{questionId}/answers/{answerId}")
     @ResponseStatus(HttpStatus.OK)
+    @SecurityRequirement(name = "bearer-key")
     public String deleteAnswer(AuthenticatedRequest request, @PathVariable("questionId") String questionId, @PathVariable("answerId") String answerId) {
         String uuid = request.getUserId();
         Question question = questionRepository.findById(questionId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found", null));
