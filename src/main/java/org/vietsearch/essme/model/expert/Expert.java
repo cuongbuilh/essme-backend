@@ -26,4 +26,9 @@ public class Expert {
     @NotNull
     @Valid
     private Source source;
+
+    @JsonProperty("uid")
+    @Field("uid")
+    // uid is id provided by firebase
+    private String uid;
 }
