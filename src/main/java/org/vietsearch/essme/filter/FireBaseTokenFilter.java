@@ -69,7 +69,7 @@ public class FireBaseTokenFilter extends OncePerRequestFilter {
 
         Role role = null;
         if(userRepository.existsById(uid)) {
-            User mongoUser = userRepository.findById(uid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found", null));
+            User mongoUser = userRepository.findById(uid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found", null));
             role = mongoUser.getRole();
             System.out.println(role);
             user.setRole(role);
