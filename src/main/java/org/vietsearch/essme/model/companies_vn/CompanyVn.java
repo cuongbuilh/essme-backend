@@ -40,7 +40,7 @@ public class CompanyVn{
 	private String tel;
 
 	@Field(name = "tax")
-	@JsonProperty("tax")
+	@JsonProperty("fax")
 	@NotBlank
 	private String fax;
 
