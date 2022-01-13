@@ -1,15 +1,17 @@
 package org.vietsearch.essme.model.expert;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
-public class FeaturesItem{
+@Data
+public class FeaturesItem {
 
-	@JsonProperty("geometry")
-	private Geometry geometry;
+    @JsonProperty("geometry")
+    private Geometry geometry;
 
-	@JsonProperty("type")
-	private String type = "Feature";
+    @JsonProperty("type")
+    private String type = "Feature";
 
-	@JsonProperty("properties")
-	private Properties properties;
+    @JsonProperty("properties")
+    private Properties properties;
 }

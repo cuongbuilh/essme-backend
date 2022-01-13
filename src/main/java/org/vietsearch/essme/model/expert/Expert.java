@@ -2,7 +2,6 @@ package org.vietsearch.essme.model.expert;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
@@ -15,14 +14,14 @@ import javax.validation.constraints.NotNull;
 public class Expert {
 
     @Id
-    @JsonProperty("_id")
+    @JsonProperty(value = "_id", access = JsonProperty.Access.READ_ONLY)
     private String _id;
 
     @JsonProperty("image")
     private String image;
 
     @Field(name = "other link")
-    @JsonProperty("other link")
+    @JsonProperty("other_link")
     private String otherLink;
 
     @JsonProperty("address")
@@ -35,9 +34,7 @@ public class Expert {
     private String degree;
 
     @NotNull
-    @Field(name = "degree index")
-    @JsonProperty("degree index")
-    private double degreeIndex;
+    private double score;
 
     @JsonProperty("birth")
     private String birth;
@@ -51,7 +48,7 @@ public class Expert {
     private String name;
 
     @Field(name = "research area")
-    @JsonProperty("research area")
+    @JsonProperty("research_area")
     private String researchArea;
 
     @JsonProperty("company")
