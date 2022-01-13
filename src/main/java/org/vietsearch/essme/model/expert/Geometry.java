@@ -1,12 +1,16 @@
 package org.vietsearch.essme.model.expert;
-import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
+import lombok.Data;
 
-public class Geometry{
+import java.util.List;
 
-	@JsonProperty("coordinates")
-	private List<Double> coordinates;
+@Data
+public class Geometry {
 
-	@JsonProperty("type")
-	private String type = "Point";
+    @JsonProperty("coordinates")
+    private List<Double> coordinates;
+
+    @JsonProperty("type")
+    private String type = "Point";
 }
