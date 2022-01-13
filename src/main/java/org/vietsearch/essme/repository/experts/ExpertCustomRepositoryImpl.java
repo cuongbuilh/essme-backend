@@ -5,7 +5,6 @@ import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.Fields;
 import org.springframework.data.mongodb.core.aggregation.GroupOperation;
-import org.springframework.data.mongodb.core.aggregation.UnwindOperation;
 import org.springframework.stereotype.Repository;
 import org.vietsearch.essme.model.expert.Expert;
 
