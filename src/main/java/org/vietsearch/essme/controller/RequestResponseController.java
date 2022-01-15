@@ -3,6 +3,7 @@ package org.vietsearch.essme.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -10,8 +11,10 @@ import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.vietsearch.essme.event.OnSendResponseEvent;
 import org.vietsearch.essme.filter.AuthenticatedRequest;
 import org.vietsearch.essme.model.expert.Expert;
+import org.vietsearch.essme.model.user.User;
 import org.vietsearch.essme.repository.RequestResponseRepository;
 import org.vietsearch.essme.model.request_response.*;
 import org.vietsearch.essme.repository.UserRepository;
@@ -39,6 +42,9 @@ public class RequestResponseController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
 
     @GetMapping
@@ -127,6 +133,14 @@ public class RequestResponseController {
             request.setResponses(new ArrayList<>());
         response.setUid(authenticatedRequest.getUserId());
         request.getResponses().add(response);
+
+        // create send email event
+        Optional<Expert> expertOptional = expertRepository.findById(response.getExpertId());
+        Optional<User> userOptional = userRepository.findById(request.getCustomerId());
+        if(expertOptional.isPresent() && userOptional.isPresent()){
+            eventPublisher.publishEvent(new OnSendResponseEvent(expertOptional.get().getEmail(), userOptional.get().getEmail()));
+        }
+
         return requestRepository.save(request);
     }
 
