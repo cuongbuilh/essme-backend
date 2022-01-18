@@ -12,6 +12,7 @@ import org.vietsearch.essme.repository.NewsRepository;
 import org.vietsearch.essme.service.ExpertService;
 
 import javax.annotation.Resource;
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
 
@@ -54,7 +55,7 @@ public class HomepageController {
     }
 
     @PutMapping
-    public Homepage update(@RequestBody Homepage data) {
+    public Homepage update(@RequestBody @Valid Homepage data) {
         Homepage homepage = homepageRepository.findFirstBy();
         data.set_id(homepage.get_id());
         return homepageRepository.save(data);
