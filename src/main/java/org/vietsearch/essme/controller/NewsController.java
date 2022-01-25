@@ -1,8 +1,10 @@
 package org.vietsearch.essme.controller;
 
+import io.swagger.v3.oas.annotations.Parameter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -19,16 +21,24 @@ public class NewsController {
     private NewsRepository newsRepository;
 
     @GetMapping("/search")
-    public List<News> search(@RequestParam("what") String what) {
+    public Page<News> searchEvents(@RequestParam(value = "what", required = false) String what,
+                                   @RequestParam(value = "page", defaultValue = "0", required = false) int page,
+                                   @RequestParam(value = "size", defaultValue = "20", required = false) int size,
+                                   @Parameter(hidden = true) Pageable pageable) {
+        if (what == null) {
+            return newsRepository.findAll(pageable);
+        }
         TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingPhrase(what);
-        return newsRepository.findBy(criteria);
+        return newsRepository.findBy(criteria, pageable);
     }
 
     @GetMapping
-    public List<News> getNews(@RequestParam(value = "page", defaultValue = "0") int page,
-                              @RequestParam(value = "size", defaultValue = "20") int size) {
-        Page<News> newsPagePage = newsRepository.findAll(PageRequest.of(page, size));
-        return newsPagePage.getContent();
+    public List<News> getEvents(@RequestParam(value = "limit", required = false) Integer limit) {
+        if (limit == null) {
+            return newsRepository.findAll();
+        }
+        Page<News> eventPage = newsRepository.findAll(PageRequest.of(0, limit));
+        return eventPage.getContent();
     }
 
     @GetMapping("/{id}")
