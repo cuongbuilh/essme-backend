@@ -43,6 +43,11 @@ public class IndustryController {
         return industryRepository.findAll(PageRequest.of(page, size, sort)).getContent();
     }
 
+    @GetMapping("/{id}")
+    public Industry getIndustryById(@PathVariable String id) {
+        return industryRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Industry not found"));
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Industry createIndustry(@Valid @RequestBody Industry industry) {
@@ -53,7 +58,7 @@ public class IndustryController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public void delete(@PathVariable("id") String id) {
-            industryRepository.deleteById(id);
+        industryRepository.deleteById(id);
     }
 
     @PutMapping("/{id}")
