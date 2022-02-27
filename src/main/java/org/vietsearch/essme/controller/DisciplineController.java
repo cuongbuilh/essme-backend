@@ -72,7 +72,7 @@ public class DisciplineController {
                 discipline.set_id(_id);
                 return disciplineRepository.save(discipline);
             } else {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Industry name already exists");
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Discipline name already exists");
             }
         }
     }
