@@ -8,7 +8,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.stereotype.Service;
-import org.vietsearch.essme.model.Event;
+//import org.vietsearch.essme.model.Event;
+import org.vietsearch.essme.model.Event.Event;
 import org.vietsearch.essme.model.expert.Expert;
 import org.vietsearch.essme.repository.EventRepository;
 
