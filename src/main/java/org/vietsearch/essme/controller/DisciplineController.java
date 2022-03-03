@@ -12,6 +12,8 @@ import org.vietsearch.essme.model.academic_disciplines.Discipline;
 import org.vietsearch.essme.repository.academic_disciplines.DisciplineRepository;
 
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/discipline")
@@ -37,6 +39,9 @@ public class DisciplineController {
 
     @GetMapping("/search")
     public List<Discipline> searchDisciplines(@RequestParam("text") String text) {
+        if (text == null || "".equals(text)) {
+            return disciplineRepository.findAll();
+        }
         TextCriteria criteria = TextCriteria.forDefaultLanguage().caseSensitive(false).matchingPhrase(text);
         List<Discipline> list = disciplineRepository.findBy(criteria);
         if (list.isEmpty()) {
@@ -47,7 +52,7 @@ public class DisciplineController {
 
     @GetMapping("/{parent_id}")
     public Object parent(@PathVariable("parent_id") String parentId) {
-       return disciplineRepository.findByParentIdStartsWithIgnoreCase(parentId);
+        return disciplineRepository.findByParentIdStartsWithIgnoreCase(parentId);
     }
 
     @PostMapping
@@ -61,9 +66,18 @@ public class DisciplineController {
     @ResponseStatus(value = HttpStatus.OK)
     public Discipline updateById(@PathVariable("_id") String _id, @RequestBody Discipline discipline) {
         disciplineRepository.findById(_id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Discipline not found"));
-        checkExistsByName(discipline.getName());
-        discipline.set_id(_id);
-        return disciplineRepository.save(discipline);
+        Optional<Discipline> optional = disciplineRepository.findByNameIgnoreCase(discipline.getName());
+        if (optional.isEmpty()) {
+            discipline.set_id(_id);
+            return disciplineRepository.save(discipline);
+        } else {
+            if (Objects.equals(optional.get().get_id(), _id)) {
+                discipline.set_id(_id);
+                return disciplineRepository.save(discipline);
+            } else {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Discipline name already exists");
+            }
+        }
     }
 
     @DeleteMapping("/{_id}")

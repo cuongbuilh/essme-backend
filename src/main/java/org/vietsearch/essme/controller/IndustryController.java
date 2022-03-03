@@ -13,6 +13,7 @@ import org.vietsearch.essme.repository.IndustryRepository;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/industries")
@@ -23,6 +24,9 @@ public class IndustryController {
 
     @GetMapping("/search")
     public List<Industry> searchIndustries(@RequestParam("name") String name) {
+        if (name == null || "".equals(name)) {
+            return industryRepository.findAll();
+        }
         TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingPhrase(name);
         List<Industry> list = industryRepository.findBy(criteria);
         if (list.isEmpty())
@@ -70,9 +74,19 @@ public class IndustryController {
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public Industry update(@PathVariable("id") String id, @Valid @RequestBody Industry industry) {
-        checkExistsByName(industry.getName());
-        industry.set_id(id);
-        return industryRepository.save(industry);
+        industryRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Industry not found"));
+        Industry optional = industryRepository.findByNameIgnoreCase(industry.getName());
+        if (optional == null) {
+            industry.set_id(id);
+            return industryRepository.save(industry);
+        } else {
+            if (Objects.equals(optional.get_id(), id)) {
+                industry.set_id(id);
+                return industryRepository.save(industry);
+            } else {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Industry name already exists");
+            }
+        }
     }
 
     private void checkExistsByName(String name) {

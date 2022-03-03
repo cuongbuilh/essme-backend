@@ -12,6 +12,7 @@ import org.vietsearch.essme.repository.CorporateRepository;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/corporates")
@@ -21,6 +22,9 @@ public class CorporateTitleController {
 
     @GetMapping("/search")
     public List<Corporate> search(@RequestParam("name") String name) {
+        if (name == null || "".equals(name)) {
+            return corporateRepository.findAll();
+        }
         TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingPhrase(name);
         List<Corporate> list = corporateRepository.findBy(criteria);
         if (list.isEmpty())
@@ -47,7 +51,6 @@ public class CorporateTitleController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Corporate create(@Valid @RequestBody Corporate corporate) {
-        checkExistsByName(corporate.getName());
         return corporateRepository.save(corporate);
     }
 
@@ -61,13 +64,22 @@ public class CorporateTitleController {
     @ResponseStatus(HttpStatus.OK)
     public Corporate update(@PathVariable("id") String id, @Valid @RequestBody Corporate corporate) {
         corporateRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Corporate not found"));
-        checkExistsByName(corporate.getName());
-        corporate.set_id(id);
-        return corporateRepository.save(corporate);
+        Corporate optional = corporateRepository.findByNameIgnoreCase(corporate.getName());
+        if (optional == null) {
+            corporate.set_id(id);
+            return corporateRepository.save(corporate);
+        } else {
+            if (Objects.equals(optional.get_id(), id)) {
+                corporate.set_id(id);
+                return corporateRepository.save(corporate);
+            } else {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Corporate name already exists");
+            }
+        }
     }
 
     private void checkExistsByName(String name) {
-        if (corporateRepository.findByNameIgnoreCase(name) != null) {
+        if (this.corporateRepository.findByNameIgnoreCase(name) != null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Corporate already exists");
         }
     }

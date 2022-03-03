@@ -17,6 +17,7 @@ import org.vietsearch.essme.service.expert.ExpertService;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/experts")
@@ -58,13 +59,21 @@ public class ExpertController {
                                       @RequestParam(name = "sortBy", required = false) String sortBy,
                                       @RequestParam(name = "asc", defaultValue = "true") boolean asc) {
 
-        Sort sort = Sort.by("score");
+        Sort sort = Sort.by("degree index");
         if (sortBy != null) {
             sort = Sort.by(sortBy);
             if (!asc) {
                 sort.descending();
             }
         }
+        if (Objects.equals(what, "")) {
+            what = null;
+        }
+
+        if (Objects.equals(where, "")) {
+            where = null;
+        }
+
         // return all if blank
         if (what == null && where == null) {
             return expertRepository.findAll(PageRequest.of(page, size, sort));
