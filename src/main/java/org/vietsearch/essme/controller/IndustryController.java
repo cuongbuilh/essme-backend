@@ -13,6 +13,7 @@ import org.vietsearch.essme.repository.IndustryRepository;
 
 import javax.validation.Valid;
 import java.util.List;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/industries")
@@ -23,6 +24,9 @@ public class IndustryController {
 
     @GetMapping("/search")
     public List<Industry> searchIndustries(@RequestParam("name") String name) {
+        if (name == null || "".equals(name)) {
+            return industryRepository.findAll();
+        }
         TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingPhrase(name);
         List<Industry> list = industryRepository.findBy(criteria);
         if (list.isEmpty())
@@ -43,6 +47,17 @@ public class IndustryController {
         return industryRepository.findAll(PageRequest.of(page, size, sort)).getContent();
     }
 
+    @GetMapping("/{id}")
+    public Industry getIndustryById(@PathVariable String id) {
+        return industryRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Industry not found"));
+    }
+
+    @GetMapping("/{id}/sub")
+    public List<Industry> getSubIndustry(@PathVariable String id) {
+        Industry industry = industryRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Industry not found"));
+        return industryRepository.findBySourceParentId(industry.getSourceId());
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public Industry createIndustry(@Valid @RequestBody Industry industry) {
@@ -53,21 +68,37 @@ public class IndustryController {
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public void delete(@PathVariable("id") String id) {
-            industryRepository.deleteById(id);
+        industryRepository.deleteById(id);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
-    public Industry update(@PathVariable("id") String id, @Valid @RequestBody Industry industry) {
-        industryRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Industry not found"));
-        checkExistsByName(industry.getName());
-        industry.set_id(id);
-        return industryRepository.save(industry);
+    public Industry update(@PathVariable("id") String id,
+                           @Valid @RequestBody Industry industry) {
+
+        // get old industry
+        Industry oldIndustry = industryRepository.findById(id).
+                orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Industry not found"));
+
+        // check industryName exist
+        Industry optional = industryRepository.findByNameIgnoreCase(industry.getName());
+        if (optional == null) {
+            industry.set_id(id);
+            return industryRepository.save(industry);
+        }
+
+        // check if is one industry
+        if (Objects.equals(optional.get_id(), id)) {
+            industry.set_id(id);
+            return industryRepository.save(industry);
+        } else {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Industry name already exists");
+        }
     }
 
     private void checkExistsByName(String name) {
         if (industryRepository.findByNameIgnoreCase(name) != null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Industry already exists");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Industry name already exists");
         }
     }
 }

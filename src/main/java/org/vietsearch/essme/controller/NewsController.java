@@ -3,12 +3,12 @@ package org.vietsearch.essme.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.vietsearch.essme.model.News;
-import org.vietsearch.essme.repository.NewsRepository;
+import org.vietsearch.essme.repository.news.NewsCustomRepository;
+import org.vietsearch.essme.repository.news.NewsRepository;
 
 import java.util.List;
 
@@ -16,19 +16,32 @@ import java.util.List;
 @RequestMapping("/api/news")
 public class NewsController {
     @Autowired
-    private NewsRepository newsRepository;
+    NewsRepository newsRepository;
+
+    @Autowired
+    NewsCustomRepository newsCustomRepository;
 
     @GetMapping("/search")
-    public List<News> search(@RequestParam("what") String what) {
-        TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingPhrase(what);
-        return newsRepository.findBy(criteria);
+    public Page<News> searchEvents(@RequestParam(value = "what", required = false) String what,
+                                   @RequestParam(value = "tag", required = false) String tag,
+                                   @RequestParam(value = "page", defaultValue = "0", required = false) int page,
+                                   @RequestParam(value = "size", defaultValue = "20", required = false) int size
+    ) {
+        return newsCustomRepository.findByTextSearchAndTag(what, tag, PageRequest.of(page, size));
+    }
+
+    @GetMapping("/tags")
+    public List<String> getAllTags() {
+        return newsCustomRepository.findDistinctTags();
     }
 
     @GetMapping
-    public List<News> getNews(@RequestParam(value = "page", defaultValue = "0") int page,
-                              @RequestParam(value = "size", defaultValue = "20") int size) {
-        Page<News> newsPagePage = newsRepository.findAll(PageRequest.of(page, size));
-        return newsPagePage.getContent();
+    public List<News> getEvents(@RequestParam(value = "limit", required = false) Integer limit) {
+        if (limit == null) {
+            return newsRepository.findAll();
+        }
+        Page<News> eventPage = newsRepository.findAll(PageRequest.of(0, limit));
+        return eventPage.getContent();
     }
 
     @GetMapping("/{id}")

@@ -1,9 +1,8 @@
 package org.vietsearch.essme.controller;
 
-import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -11,10 +10,7 @@ import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import org.vietsearch.essme.event.OnSendResponseEvent;
 import org.vietsearch.essme.filter.AuthenticatedRequest;
-import org.vietsearch.essme.model.expert.Expert;
-import org.vietsearch.essme.model.user.User;
 import org.vietsearch.essme.repository.RequestResponseRepository;
 import org.vietsearch.essme.model.request_response.*;
 import org.vietsearch.essme.repository.UserRepository;
@@ -22,7 +18,6 @@ import org.vietsearch.essme.repository.direct_request.DirectRequestRepository;
 import org.vietsearch.essme.repository.experts.ExpertRepository;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -43,12 +38,46 @@ public class RequestResponseController {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private ApplicationEventPublisher eventPublisher;
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    @SecurityRequirement(name = "bearer-key")
+    public Request addRequest(AuthenticatedRequest httpRequest, @Valid @RequestBody Request customRequest) {
+        customRequest.setUid(httpRequest.getUserId());
+        requestRepository.save(customRequest);
+        return requestRepository.save(customRequest);
+    }
+
+    @PostMapping("/{requestId}/responses")
+    @ResponseStatus(HttpStatus.CREATED)
+    @SecurityRequirement(name = "bearer-key")
+    public Request addResponse(AuthenticatedRequest httpRequest,
+                               @PathVariable("requestId") String requestID,
+                               @Valid @RequestBody Response response) {
+
+        // get main request
+        Request request = requestRepository.findById(requestID).
+                orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Question not found", null));
+        if (request.getResponses() == null)
+            request.setResponses(new ArrayList<>());
+
+        // update response
+        Date now = new Date();
+        response.set_id(new ObjectId().toString());
+        response.setUid(httpRequest.getUserId());
+        response.setUpdatedAt(now);
+        response.setCreatedAt(now);
+
+        // save
+        request.getResponses().add(response);
+        return requestRepository.save(request);
+    }
 
 
     @GetMapping
-    public Page<Request> getRequests(@RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "20") int size, @RequestParam(value = "sort", defaultValue = "createdAt") String sortAttr, @RequestParam(value = "desc", defaultValue = "false") boolean desc) {
+    public Page<Request> getRequests(@RequestParam(value = "page", defaultValue = "0") int page,
+                                     @RequestParam(value = "size", defaultValue = "20") int size,
+                                     @RequestParam(value = "sort", defaultValue = "createdAt") String sortAttr,
+                                     @RequestParam(value = "desc", defaultValue = "false") boolean desc) {
         Sort sort = Sort.by(sortAttr);
         if (desc)
             sort = sort.descending();
@@ -60,22 +89,24 @@ public class RequestResponseController {
 
     @GetMapping("/{id}")
     public Request getRequestById(@PathVariable("id") String id) {
-        return requestRepository.findById(id).get();
+        return requestRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
     }
 
     @GetMapping("/search")
     public List<Request> searchRequests(@RequestParam("text") String text) {
+        if (text == null || "".equals(text)) {
+            return requestRepository.findAll();
+        }
         TextCriteria criteria = TextCriteria.forDefaultLanguage().matchingPhrase(text);
         return requestRepository.findBy(criteria);
     }
 
-    @GetMapping("/byUserId/{userId}")
-    public List<Request> getRequestsByUserId(@PathVariable("userId") String userId){
-         return requestRepository.findAllByCustomerId(userId);
-    }
-
     @GetMapping("/topic/{topic}")
-    public Page<Request> getRequestByTopic(@PathVariable("topic") String topic, @RequestParam(value = "page", defaultValue = "0") int page, @RequestParam(value = "size", defaultValue = "20") int size, @RequestParam(value = "sort", defaultValue = "createdAt") String sortAttr, @RequestParam(value = "desc", defaultValue = "false") boolean desc) {
+    public Page<Request> getRequestByTopic(@PathVariable("topic") String topic,
+                                           @RequestParam(value = "page", defaultValue = "0") int page,
+                                           @RequestParam(value = "size", defaultValue = "20") int size,
+                                           @RequestParam(value = "sort", defaultValue = "createdAt") String sortAttr,
+                                           @RequestParam(value = "desc", defaultValue = "false") boolean desc) {
         Sort sort = Sort.by(sortAttr);
         if (desc)
             sort = sort.descending();
@@ -87,22 +118,29 @@ public class RequestResponseController {
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     @SecurityRequirement(name = "bearer-key")
-    public Request updateRequest(AuthenticatedRequest authenticatedRequest, @PathVariable("id") String id, @Valid @RequestBody Request request) {
+    public Request updateRequest(AuthenticatedRequest authenticatedRequest,
+                                 @PathVariable("id") String id,
+                                 @Valid @RequestBody Request request) {
         String uuid = authenticatedRequest.getUserId();
-        if (requestRepository.existsById(id)) {
-            // check
-            if (!matchUserRequest(uuid, id)) {
-                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
-            }
 
-            // update
-            request.setUid(uuid);
-            request.set_id(id);
-            requestRepository.save(request);
-            return request;
-        } else {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null);
+        // find old request
+        Request oldRequest = requestRepository.findById(id).
+                orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"Request cannot found!"));
+
+        // check permission
+        if (!matchUserRequest(uuid, id)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
         }
+
+        // update
+        request.setUid(uuid);
+        request.set_id(id);
+        request.setUpdatedAt(new Date());
+        request.setCreatedAt(oldRequest.getCreatedAt()); // keep createAt unchangeable
+
+        // save
+        requestRepository.save(request);
+        return request;
     }
 
     @DeleteMapping("/{id}")
@@ -124,38 +162,23 @@ public class RequestResponseController {
         }
     }
 
-    @PostMapping("/{requestId}/responses")
-    @ResponseStatus(HttpStatus.CREATED)
-    @SecurityRequirement(name = "bearer-key")
-    public Request addResponse(AuthenticatedRequest authenticatedRequest, @PathVariable("requestId") String requestId, @Valid @RequestBody Response response) {
-        Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
-        if (request.getResponses() == null)
-            request.setResponses(new ArrayList<>());
-        response.setUid(authenticatedRequest.getUserId());
-        request.getResponses().add(response);
-
-        // create send email event
-        Optional<Expert> expertOptional = expertRepository.findById(response.getExpertId());
-        Optional<User> userOptional = userRepository.findById(request.getCustomerId());
-        if(expertOptional.isPresent() && userOptional.isPresent()){
-            eventPublisher.publishEvent(new OnSendResponseEvent(expertOptional.get().getEmail(), userOptional.get().getEmail()));
-        }
-
-        return requestRepository.save(request);
-    }
-
     @GetMapping("/{requestId}/responses")
     public List<Response> getResponse(@PathVariable("requestId") String requestId) {
-        Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
+        Request request = requestRepository.findById(requestId).
+                orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
         return request.getResponses();
     }
 
     @PutMapping("/{requestId}/responses/{responsesId}")
     @ResponseStatus(HttpStatus.OK)
     @SecurityRequirement(name = "bearer-key")
-    public Response updateResponse(AuthenticatedRequest authenticatedRequest, @PathVariable("requestId") String requestId, @PathVariable("responsesId") String responsesId, @Valid @RequestBody Response response) {
+    public Response updateResponse(AuthenticatedRequest authenticatedRequest,
+                                   @PathVariable("requestId") String requestId,
+                                   @PathVariable("responsesId") String responsesId,
+                                   @Valid @RequestBody Response response) {
         String uuid = authenticatedRequest.getUserId();
-        Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
+        Request request = requestRepository.findById(requestId).
+                orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
         if (request.getResponses() != null) {
             for (Response res : request.getResponses()) {
                 if (matchExpertResponse(uuid, responsesId, res)) {
@@ -174,9 +197,12 @@ public class RequestResponseController {
     @DeleteMapping("/{requestId}/responses/{responsesId}")
     @ResponseStatus(HttpStatus.OK)
     @SecurityRequirement(name = "bearer-key")
-    public String deleteResponse(AuthenticatedRequest authenticatedRequest, @PathVariable("requestId") String requestId, @PathVariable("responsesId") String responseId) {
+    public String deleteResponse(AuthenticatedRequest authenticatedRequest,
+                                 @PathVariable("requestId") String requestId,
+                                 @PathVariable("responsesId") String responseId) {
         String uuid = authenticatedRequest.getUserId();
-        Request request = requestRepository.findById(requestId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
+        Request request = requestRepository.findById(requestId).
+                orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found", null));
         if (request.getResponses() != null) {
             for (Response res : request.getResponses()) {
                 if (matchExpertResponse(uuid, responseId, res)) {
@@ -206,7 +232,7 @@ public class RequestResponseController {
     private boolean matchExpertResponse(String uuid, String responseChangedId, Response response) {
         if (!response.get_id().equals(responseChangedId))
             return false;
-        if(!response.getUid().equals(uuid))
+        if (!response.getUid().equals(uuid))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
         return response.getUid().equals(uuid);
     }
@@ -245,17 +271,26 @@ public class RequestResponseController {
     @PutMapping("/direct/{requestId}")
     @ResponseStatus(HttpStatus.OK)
     @SecurityRequirement(name = "bearer-key")
-    public DirectRequest updateDirectRequest(AuthenticatedRequest authenticatedRequest,@PathVariable("requestId") String id, @Valid @RequestBody DirectRequest request) {
-        // FE side save createAt value then add into request
+    public DirectRequest updateDirectRequest(AuthenticatedRequest authenticatedRequest,
+                                             @PathVariable("requestId") String id,
+                                             @Valid @RequestBody DirectRequest request) {
+        // get old request
+        DirectRequest oldRequest = directRequestRepository.findById(id).
+                orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not fount"));
+
+        // update request
         request.setLastUpdatedAt(new Date());
         request.set_id(id);
+        request.setCreateAt(oldRequest.getCreateAt()); // keep createAt not changeable
+
         return directRequestRepository.save(request);
     }
 
     @DeleteMapping("/direct/{requestId}")
     @ResponseStatus(HttpStatus.OK)
     @SecurityRequirement(name = "bearer-key")
-    public String deleteDirectRequest(AuthenticatedRequest authenticatedRequest,@PathVariable("requestId") String id) {
+    public String deleteDirectRequest(AuthenticatedRequest authenticatedRequest,
+                                      @PathVariable("requestId") String id) {
         directRequestRepository.deleteById(id);
         return "Deleted request: " + id;
     }
