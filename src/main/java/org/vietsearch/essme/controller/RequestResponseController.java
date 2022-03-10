@@ -3,6 +3,7 @@ package org.vietsearch.essme.controller;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -10,10 +11,14 @@ import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import org.vietsearch.essme.event.OnSendResponseEvent;
 import org.vietsearch.essme.filter.AuthenticatedRequest;
+import org.vietsearch.essme.model.customer.Customer;
+import org.vietsearch.essme.model.expert.Expert;
 import org.vietsearch.essme.repository.RequestResponseRepository;
 import org.vietsearch.essme.model.request_response.*;
 import org.vietsearch.essme.repository.UserRepository;
+import org.vietsearch.essme.repository.customer.CustomerRepository;
 import org.vietsearch.essme.repository.direct_request.DirectRequestRepository;
 import org.vietsearch.essme.repository.experts.ExpertRepository;
 
@@ -37,6 +42,12 @@ public class RequestResponseController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CustomerRepository customerRepository;
+
+    @Autowired
+    private ApplicationEventPublisher eventPublisher;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -265,6 +276,12 @@ public class RequestResponseController {
         request.setCreateAt(createAt);
         request.setLastUpdatedAt(createAt);
         request.setStatus(DirectRequest.Status.CONSIDERING);
+
+        // public event
+        Expert expert  = expertRepository.findById(request.getExpertId()).orElse(new Expert());
+        Customer customer = customerRepository.findById(request.getExpertId()).orElse(new Customer());
+        eventPublisher.publishEvent(new OnSendResponseEvent(expert.getEmail(), customer.getEmail()));
+
         return directRequestRepository.insert(request);
     }
 
