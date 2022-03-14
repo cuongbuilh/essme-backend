@@ -50,12 +50,12 @@ public class Expert {
 
     @Field(name = "research area")
     @JsonProperty("research_area")
-    private String researchArea;
+    private List<String> researchArea;
 
     @JsonProperty("company")
     private String company;
 
-    @JsonProperty("location")
+    @JsonProperty(value = "location", access = JsonProperty.Access.READ_ONLY)
     private Location location;
 
     @NotBlank
