@@ -1,5 +1,6 @@
 package org.vietsearch.essme.repository.experts;
 
+import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -70,17 +71,31 @@ public class ExpertCustomRepositoryImpl implements ExpertCustomRepository {
     @Override
     public List<Expert> relatedExpertsByField(String field, int limit, int skip) {
         Optional<ResearchArea> optional = researchAreaRepository.findByNameVnOrNameEn(field, field);
-        Query query = new Query().limit(limit).skip(skip);
         if (optional.isEmpty()) {
+            Query query = new Query().limit(limit).skip(skip);
             query.addCriteria(Criteria.where("research area").regex(Pattern.compile(field, Pattern.CASE_INSENSITIVE)));
+            return mongoTemplate.find(query, Expert.class);
         } else {
             ResearchArea researchArea = optional.get();
-            List<Pattern> patternList = researchArea.getKeys().stream()
-                    .map(item -> Pattern.compile(item, Pattern.CASE_INSENSITIVE))
-                    .collect(Collectors.toList());
-            query.addCriteria(Criteria.where("research area").elemMatch(new Criteria().in(patternList)));
+            Query query = this.relatedExpertsByFields(researchArea.getKeys(), limit, skip);
+            return mongoTemplate.find(query, Expert.class);
         }
+    }
+
+    @Override
+    public List<Expert> relatedExpertsByExpert(Expert expert, int limit, int skip) {
+        Query query = this.relatedExpertsByFields(expert.getResearchArea(), limit, skip);
+        query.addCriteria(Criteria.where("_id").ne(new ObjectId(expert.get_id())));
         return mongoTemplate.find(query, Expert.class);
+    }
+
+    private Query relatedExpertsByFields(List<String> fields, int limit, int skip) {
+        Query query = new Query().limit(limit).skip(skip);
+        List<Pattern> patternList = fields.stream()
+                .map(field -> Pattern.compile(field, Pattern.CASE_INSENSITIVE))
+                .collect(Collectors.toList());
+        query.addCriteria(Criteria.where("research area").elemMatch(new Criteria().in(patternList)));
+        return query;
     }
 
 }

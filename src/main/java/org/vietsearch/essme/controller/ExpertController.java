@@ -59,6 +59,14 @@ public class ExpertController {
         return expertCustomRepository.relatedExpertsByField(field, limit, skip);
     }
 
+    @GetMapping("/{id}/related")
+    public List<Expert> getRelatedExpertsById(@PathVariable String id,
+                                          @RequestParam(defaultValue = "20") int limit,
+                                          @RequestParam(defaultValue = "0") int skip) {
+        Expert expert = expertRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return expertCustomRepository.relatedExpertsByExpert(expert, limit, skip);
+    }
+
     @GetMapping("/search")
     public Page<Expert> searchExperts(@RequestParam(value = "what", required = false) String what,
                                       @RequestParam(value = "where", required = false) String where,
