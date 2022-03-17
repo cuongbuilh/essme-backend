@@ -17,7 +17,6 @@ import org.vietsearch.essme.model.expert.Expert;
 import org.vietsearch.essme.repository.ResearchAreaRepository;
 import org.vietsearch.essme.utils.OpenStreetMapUtils;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -69,21 +68,18 @@ public class ExpertCustomRepositoryImpl implements ExpertCustomRepository {
     }
 
     @Override
-    public List<Expert> relateExpertByField(String field, int limit) {
+    public List<Expert> relatedExpertsByField(String field, int limit, int skip) {
         Optional<ResearchArea> optional = researchAreaRepository.findByNameVnOrNameEn(field, field);
+        Query query = new Query().limit(limit).skip(skip);
         if (optional.isEmpty()) {
-            return Collections.emptyList();
+            query.addCriteria(Criteria.where("research area").regex(Pattern.compile(field, Pattern.CASE_INSENSITIVE)));
+        } else {
+            ResearchArea researchArea = optional.get();
+            List<Pattern> patternList = researchArea.getKeys().stream()
+                    .map(item -> Pattern.compile(item, Pattern.CASE_INSENSITIVE))
+                    .collect(Collectors.toList());
+            query.addCriteria(Criteria.where("research area").elemMatch(new Criteria().in(patternList)));
         }
-        ResearchArea researchArea = optional.get();
-
-        Query query = new Query().limit(limit);
-
-        List<Pattern> patternList = researchArea.getKeys().stream()
-                .map(item -> Pattern.compile(item, Pattern.CASE_INSENSITIVE))
-                .collect(Collectors.toList());
-
-        query.addCriteria(Criteria.where("research area").elemMatch(new Criteria().in(patternList)));
-
         return mongoTemplate.find(query, Expert.class);
     }
 

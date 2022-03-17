@@ -14,5 +14,5 @@ public interface ExpertCustomRepository {
 
     Page<Expert> searchByLocationAndText(String what, String where, double radius, Pageable pageable);
 
-    List<Expert> relateExpertByField(String field, int limit);
+    List<Expert> relatedExpertsByField(String field, int limit, int skip);
 }
