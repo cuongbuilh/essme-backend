@@ -6,6 +6,8 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 
+import javax.validation.constraints.NotBlank;
+
 @Data
 @Document("users")
 public class User {
@@ -13,19 +15,21 @@ public class User {
     @JsonProperty(value = "_id", access = JsonProperty.Access.READ_ONLY)
     String uid;
 
-    @JsonProperty("email")
+    @JsonProperty(value = "email", access = JsonProperty.Access.READ_ONLY)
     @Field("email")
+//    @NotBlank(message = "{vi=\"nội dung trống\", en=\"content is empty\"}")
     String email;
 
-    @JsonProperty("displayName")
+    @JsonProperty(value = "displayName", access = JsonProperty.Access.READ_ONLY)
     @Field("displayName")
+//    @NotBlank(message = "{vi=\"nội dung trống\", en=\"content is empty\"}")
     String displayName;
 
-    @JsonProperty("photoURL")
+    @JsonProperty(value = "photoURL", access = JsonProperty.Access.READ_ONLY)
     @Field("photoURL")
     String photoURL;
 
-    @JsonProperty("phoneNumber")
+    @JsonProperty(value = "phoneNumber", access = JsonProperty.Access.READ_ONLY)
     @Field("phoneNumber")
     String phoneNumber;
 

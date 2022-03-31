@@ -34,7 +34,6 @@ public class Expert {
     @JsonProperty("degree")
     private String degree;
 
-    @NotNull
     private Double score;
 
     @JsonProperty("birth")
@@ -55,7 +54,7 @@ public class Expert {
     @JsonProperty("company")
     private String company;
 
-    @JsonProperty("location")
+    @JsonProperty(value = "location", access = JsonProperty.Access.READ_ONLY)
     private Location location;
 
     @NotBlank

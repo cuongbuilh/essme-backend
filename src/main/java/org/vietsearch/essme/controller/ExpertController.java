@@ -12,6 +12,8 @@ import org.springframework.web.server.ResponseStatusException;
 import org.vietsearch.essme.filter.AuthenticatedRequest;
 import org.vietsearch.essme.model.expert.Expert;
 import org.vietsearch.essme.model.expert.Location;
+import org.vietsearch.essme.model.user.User;
+import org.vietsearch.essme.repository.UserRepository;
 import org.vietsearch.essme.repository.experts.ExpertCustomRepositoryImpl;
 import org.vietsearch.essme.repository.experts.ExpertRepository;
 import org.vietsearch.essme.service.expert.ExpertService;
@@ -33,6 +35,9 @@ public class ExpertController {
     @Autowired
     private ExpertService expertService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @GetMapping("/top")
     public List<Expert> getTop() {
         return expertService.getTop9ExpertDistinctByRA();
@@ -50,6 +55,21 @@ public class ExpertController {
             }
         }
         return expertRepository.findAll(PageRequest.of(0, limit, sort)).getContent();
+    }
+
+    @GetMapping("/suggest")
+    public List<Expert> getRelateByField(@RequestParam String field,
+                                         @RequestParam(defaultValue = "20") int limit,
+                                         @RequestParam(defaultValue = "0") int skip) {
+        return expertCustomRepository.relatedExpertsByField(field, limit, skip);
+    }
+
+    @GetMapping("/{id}/related")
+    public List<Expert> getRelatedExpertsById(@PathVariable String id,
+                                          @RequestParam(defaultValue = "20") int limit,
+                                          @RequestParam(defaultValue = "0") int skip) {
+        Expert expert = expertRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+        return expertCustomRepository.relatedExpertsByExpert(expert, limit, skip);
     }
 
     @GetMapping("/search")
@@ -92,8 +112,7 @@ public class ExpertController {
         Sort sort = Sort.by(sortAttr);
         sort = desc ? sort.descending() : sort.ascending();
 
-        Page<Expert> expertPage = expertRepository.findAll(PageRequest.of(page, size, sort));
-        return expertPage;
+        return expertRepository.findAll(PageRequest.of(page, size, sort));
     }
 
     @GetMapping("/{id}")
@@ -102,16 +121,16 @@ public class ExpertController {
     }
 
     @GetMapping("/field")
-    public List<Object> getNumberOfExpertsInEachField() {
-        return expertCustomRepository.getNumberOfExpertsInEachField();
+    public List<Object> getNumberOfExpertsInEachField(@RequestParam(required = false) String lang) {
+        return expertCustomRepository.getNumberOfExpertsInEachField(lang);
     }
 
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.OK)
     public Expert update(AuthenticatedRequest request, @PathVariable("id") String id, @Valid @RequestBody Expert expert) {
         String uuid = request.getUserId();
-        expertRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Expert not found"));
-        if (!matchExpert(uuid, id)) {
+        Expert expertDB = expertRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Expert not found"));
+        if (!matchExpert(uuid, expertDB.getUid())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
         }
         expert.setUid(uuid);
@@ -144,12 +163,18 @@ public class ExpertController {
     @ResponseStatus(HttpStatus.OK)
     public void delete(AuthenticatedRequest authenticatedRequest, @PathVariable("id") String id) {
         String uuid = authenticatedRequest.getUserId();
+        Expert expertDB = expertRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Expert not found"));
         if (!expertRepository.existsById(id))
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
-        if (!matchExpert(uuid, id)) {
+        if (!matchExpert(uuid, expertDB.getUid())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Permission denied", null);
         }
         expertRepository.deleteById(id);
+    }
+
+    @GetMapping("/uid/{uid}")
+    public Expert findByUid(@PathVariable("uid") String uid ){
+        return expertRepository.findByUid(uid).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Expert not found"));
     }
 
     private boolean matchExpert(String uuid, String expertChangedId) {
