@@ -8,6 +8,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.vietsearch.essme.filter.AuthenticatedRequest;
@@ -295,4 +296,10 @@ public class RequestResponseController {
         return "Deleted request: " + id;
     }
 
+
+
+    @GetMapping("/uid/{uid}")
+    public Page<Request> getResponseByUid(@PathVariable("uid") String uid){
+        return  requestRepository.findByUid(uid);
+    }
 }
