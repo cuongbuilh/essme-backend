@@ -313,8 +313,6 @@ public class RequestResponseController {
         return "Deleted request: " + id;
     }
 
-
-
     @GetMapping("/uid/{uid}")
     public Page<Request> getResponseByUid(@PathVariable("uid") String uid){
         return  requestRepository.findByUid(uid);
