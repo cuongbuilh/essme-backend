@@ -1,6 +1,7 @@
 package org.vietsearch.essme.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.apache.http.HttpException;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -137,7 +138,7 @@ public class RequestResponseController {
 
         // find old request
         Request oldRequest = requestRepository.findById(id).
-                orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,"Request cannot found!"));
+                orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request cannot found!"));
 
         // check permission
         if (!matchUserRequest(uuid, id)) {
@@ -272,18 +273,24 @@ public class RequestResponseController {
 
     @PostMapping("/direct")
     @ResponseStatus(HttpStatus.CREATED)
-    public DirectRequest addDirectRequest(@Valid @RequestBody DirectRequest request) {
+    public DirectRequest addDirectRequest(@Valid @RequestBody DirectRequest directRequest) {
         Date createAt = new Date();
-        request.setCreateAt(createAt);
-        request.setLastUpdatedAt(createAt);
-        request.setStatus(DirectRequest.Status.CONSIDERING);
+        directRequest.setCreateAt(createAt);
+        directRequest.setLastUpdatedAt(createAt);
+        directRequest.setStatus(DirectRequest.Status.CONSIDERING);
+
+        // get information
+        Customer customer = customerRepository.findById(directRequest.getExpertId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "You must be customer"));
+        String expertEmail = directRequest.getExpertEmail();
+        String customerEmail = customer.getEmail();
+
+        // add expertId if exist expert
+        Expert expert = expertRepository.findById(directRequest.getExpertId()).orElse(null);
+        directRequest.setExpertId(expert != null ? expert.get_id() : null);
 
         // public event
-        Expert expert  = expertRepository.findById(request.getExpertId()).orElse(new Expert());
-        Customer customer = customerRepository.findById(request.getExpertId()).orElse(new Customer());
-        eventPublisher.publishEvent(new OnSendResponseEvent(expert.getEmail(), customer.getEmail()));
-
-        return directRequestRepository.insert(request);
+        eventPublisher.publishEvent(new OnSendResponseEvent(expertEmail, customerEmail));
+        return directRequestRepository.insert(directRequest);
     }
 
     @PutMapping("/direct/{requestId}")
