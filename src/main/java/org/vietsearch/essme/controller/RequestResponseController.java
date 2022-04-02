@@ -1,7 +1,6 @@
 package org.vietsearch.essme.controller;
 
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
-import org.apache.http.HttpException;
 import org.bson.types.ObjectId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
@@ -10,15 +9,16 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.query.TextCriteria;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.vietsearch.essme.event.OnSendResponseEvent;
 import org.vietsearch.essme.filter.AuthenticatedRequest;
 import org.vietsearch.essme.model.customer.Customer;
 import org.vietsearch.essme.model.expert.Expert;
+import org.vietsearch.essme.model.request_response.DirectRequest;
+import org.vietsearch.essme.model.request_response.Request;
+import org.vietsearch.essme.model.request_response.Response;
 import org.vietsearch.essme.repository.RequestResponseRepository;
-import org.vietsearch.essme.model.request_response.*;
 import org.vietsearch.essme.repository.UserRepository;
 import org.vietsearch.essme.repository.customer.CustomerRepository;
 import org.vietsearch.essme.repository.direct_request.DirectRequestRepository;
@@ -321,7 +321,7 @@ public class RequestResponseController {
     }
 
     @GetMapping("/uid/{uid}")
-    public Page<Request> getResponseByUid(@PathVariable("uid") String uid){
-        return  requestRepository.findByUid(uid);
+    public Page<Request> getResponseByUid(@PathVariable("uid") String uid, @RequestParam(defaultValue = "0") int page, @RequestParam(defaultValue = "20") int size) {
+        return requestRepository.findByUid(uid, PageRequest.of(page, size));
     }
 }
